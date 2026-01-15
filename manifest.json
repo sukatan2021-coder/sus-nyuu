@@ -3,7 +3,7 @@
   "short_name": "在庫カレンダー",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f4c81",
+  "background_color": "#07101f",
   "theme_color": "#0f4c81",
   "icons": [
     {

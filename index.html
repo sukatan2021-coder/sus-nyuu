@@ -1,1 +1,328 @@
-<!doctype html><html><head><meta charset='utf-8'><title>PWA</title></head><body>placeholder</body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0f4c81"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <title>乳化処理 在庫・発注カレンダー</title>
+  <style>
+    :root{--bg:#07101f;--card:#101f38;--line:rgba(255,255,255,.10);--txt:#eaf2ff;--muted:#a8b6d6;
+      --warn:#ffd966;--danger:#ff7a7a;--good:#7bd389;--accent:#3da5ff;}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#07101f,#091328);color:var(--txt);
+      font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Sans","Meiryo",sans-serif;}
+    header{position:sticky;top:0;z-index:10;padding:12px 14px;background:rgba(7,16,31,.92);
+      backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#0f4c81,#3da5ff);
+      display:grid;place-items:center;font-weight:900}
+    h1{margin:0;font-size:15px}
+    .sub{margin:2px 0 0;font-size:12px;color:var(--muted)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    select,input,button{border-radius:12px;font-size:13px}
+    select,input{background:#0b1931;border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:8px 10px;outline:none}
+    button{border:none;padding:9px 12px;color:white;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#1a5ea1,#3da5ff)}
+    button.secondary{background:#162744;border:1px solid rgba(255,255,255,.12);font-weight:700}
+    main{max-width:1400px;margin:0 auto;padding:12px 14px 24px}
+    .grid{display:grid;grid-template-columns:420px 1fr;gap:12px}
+    @media (max-width:1100px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(16,31,56,.92);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 18px 45px rgba(0,0,0,.35)}
+    .card h2{margin:0 0 8px;font-size:13px;color:#d9e8ff;display:flex;justify-content:space-between;align-items:center}
+    .pill{display:inline-flex;gap:6px;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+      background:#0b1931;color:var(--muted);font-size:11px}
+    .pill.good{color:#d7ffe0;border-color:rgba(123,211,137,.35);background:rgba(123,211,137,.10)}
+    .pill.warn{color:#fff4d1;border-color:rgba(255,217,102,.45);background:rgba(255,217,102,.10)}
+    .pill.danger{color:#ffd4d4;border-color:rgba(255,122,122,.45);background:rgba(255,122,122,.10)}
+    table{width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden}
+    th,td{border-bottom:1px solid rgba(255,255,255,.06);padding:7px 6px;font-size:12px;text-align:center;white-space:nowrap}
+    thead th{background:#0c1d38;color:#cfe4ff;font-size:11px;position:sticky;top:0;z-index:5}
+    .left{text-align:left;white-space:normal}
+    .chip{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);background:#0b1931;cursor:pointer;font-weight:900;user-select:none}
+    .chip.on{background:rgba(61,165,255,.25);border-color:rgba(61,165,255,.55)}
+    .num{width:80px;text-align:right}
+    .tabs{display:flex;gap:8px;margin-bottom:10px}
+    .tab{padding:8px 10px;border-radius:14px;background:#122849;border:1px solid rgba(255,255,255,.10);cursor:pointer;font-size:12px;color:var(--muted)}
+    .tab.active{background:linear-gradient(135deg,#1a5ea1,#3da5ff);color:white;border-color:transparent}
+    .hint{color:var(--muted);font-size:12px;line-height:1.5;margin-top:6px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand">
+      <div class="logo">液</div>
+      <div>
+        <h1>乳化処理 在庫・発注カレンダー</h1>
+        <div class="sub">iPadでタップ → 在庫計算・発注判断（保存あり）</div>
+      </div>
+    </div>
+    <div class="controls">
+      <label class="pill">年 <select id="y"></select></label>
+      <label class="pill">月 <select id="m"></select></label>
+      <button id="save" class="secondary">保存</button>
+      <button id="reset" class="secondary">初期化</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>ダッシュボード <span class="pill">黄色=第1 / 赤=第2</span></h2>
+      <div id="dash"></div>
+      <div class="hint">・昼/夜を☑にすると在庫が減ります（☐なら減りません）<br>・実測を入れるとその日の在庫を上書きします</div>
+
+      <h2 style="margin-top:10px">設定 <span class="pill">入力して即反映</span></h2>
+      <div id="set"></div>
+      <div style="margin-top:10px">
+        <button id="weekday" class="secondary">平日☑ / 土日☐</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="tabs">
+        <div id="tcal" class="tab active">カレンダー</div>
+        <div id="tord" class="tab">発注リスト</div>
+      </div>
+      <div id="cal"></div>
+      <div id="ord" style="display:none;"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const KEY="nyuuka_pwa_fixed_v1";
+const CHEMS=[
+  {k:"naoh",n:"苛性ソーダ",line1cm:170,line2cm:100,lot:600,useD:4,useN:4},
+  {k:"fe",  n:"塩化第二鉄",line1cm:70, line2cm:70, lot:1500,useD:2,useN:2},
+  {k:"acid",n:"希硫酸",    line1cm:30, line2cm:30, lot:1500,useD:0.5,useN:0.5},
+];
+const today=new Date();
+function pad2(x){return String(x).padStart(2,"0")}
+function ymd(y,m,d){return `${y}-${pad2(m)}-${pad2(d)}`}
+function dim(y,m){return new Date(y,m,0).getDate()}
+function dow(d){return ["日","月","火","水","木","金","土"][d.getDay()]}
+function weekend(d){return d.getDay()==0||d.getDay()==6}
+function num(v){if(v===""||v==null) return 0; const x=Number(v); return Number.isFinite(x)?x:0}
+function fmt(x){return Math.round(num(x)).toLocaleString("ja-JP")}
+function stat(inv,l1,l2){ if(inv<=l2) return "danger"; if(inv<=l1) return "warn"; return "good"; }
+function defaultState(y,m){
+  const cmFactor=10; // 1cm=10L（基準：100L=10cm）
+  const s={meta:{y,m,cmFactor},set:{max:2000,start:{} ,useD:{},useN:{},line1:{},line2:{},lot:{}},days:{},orders:[]};
+  CHEMS.forEach(c=>{
+    s.set.start[c.k]=2000;
+    s.set.useD[c.k]=c.useD;
+    s.set.useN[c.k]=c.useN;
+    s.set.line1[c.k]=c.line1cm*cmFactor;
+    s.set.line2[c.k]=c.line2cm*cmFactor;
+    s.set.lot[c.k]=c.lot;
+  });
+  return s;
+}
+let state=load() || defaultState(today.getFullYear(), today.getMonth()+1);
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) }catch(e){ return null } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); alert("保存しました") }
+function reset(){ localStorage.removeItem(KEY); location.reload() }
+function ensureDay(key,dateObj){
+  if(!state.days[key]){
+    const wk=!weekend(dateObj);
+    state.days[key]={dayOn:wk,nightOn:wk,receipt:{naoh:0,fe:0,acid:0},adjust:{naoh:0,fe:0,acid:0},actual:{naoh:"",fe:"",acid:""}};
+  }
+  return state.days[key];
+}
+function plannedOn(key){
+  const sum={naoh:0,fe:0,acid:0};
+  state.orders.forEach(o=>{ if(o.delivery===key) sum[o.chem]+=num(o.qty); });
+  return sum;
+}
+function compute(){
+  const y=state.meta.y, m=state.meta.m;
+  const n=dim(y,m);
+  const prev={};
+  CHEMS.forEach(c=>prev[c.k]=num(state.set.start[c.k]));
+  const rows=[];
+  for(let d=1; d<=n; d++){
+    const date=new Date(y,m-1,d);
+    const key=ymd(y,m,d);
+    const day=ensureDay(key,date);
+    const plan=plannedOn(key);
+    const out={};
+    CHEMS.forEach(c=>{
+      const use=(day.dayOn?num(state.set.useD[c.k]):0)+(day.nightOn?num(state.set.useN[c.k]):0);
+      const receipt=num(day.receipt[c.k])+num(plan[c.k]);
+      const adj=num(day.adjust[c.k]);
+      let inv=prev[c.k]+receipt+adj-use;
+      if(day.actual[c.k]!=="" && day.actual[c.k]!=null) inv=num(day.actual[c.k]);
+      inv=Math.max(0,inv);
+      out[c.k]={inv,plan:plan[c.k]};
+      prev[c.k]=inv;
+    });
+    rows.push({key,date,day,...out});
+  }
+  return rows;
+}
+function render(){
+  const rows=compute();
+  const last=rows[rows.length-1];
+  let html=`<table><thead><tr><th class="left">薬品</th><th>現在在庫(L)</th><th>第1(L)</th><th>第2(L)</th><th>状態</th></tr></thead><tbody>`;
+  CHEMS.forEach(c=>{
+    const inv=last? last[c.k].inv : num(state.set.start[c.k]);
+    const l1=num(state.set.line1[c.k]), l2=num(state.set.line2[c.k]);
+    const s=stat(inv,l1,l2);
+    html+=`<tr><td class="left">${c.n}</td><td>${fmt(inv)}</td><td>${fmt(l1)}</td><td>${fmt(l2)}</td>
+      <td><span class="pill ${s}">${s==="good"?"OK":s==="warn"?"第1":"第2"}</span></td></tr>`;
+  });
+  html+=`</tbody></table>`;
+  document.getElementById("dash").innerHTML=html;
+
+  let shtml=`<table><thead><tr><th class="left">項目</th>${CHEMS.map(c=>`<th>${c.n}</th>`).join("")}</tr></thead><tbody>`;
+  shtml+=rowInputs("月初在庫(L)","start");
+  shtml+=rowInputs("昼使用(L)","useD",0.1);
+  shtml+=rowInputs("夜使用(L)","useN",0.1);
+  shtml+=rowInputs("第1ライン(L)","line1");
+  shtml+=rowInputs("第2ライン(L)","line2");
+  shtml+=rowInputs("入荷量(L)","lot");
+  shtml+=`</tbody></table>`;
+  document.getElementById("set").innerHTML=shtml;
+
+  let chtml=`<table><thead><tr><th>日</th><th>曜</th><th>昼</th><th>夜</th>${
+    CHEMS.map(c=>`<th>${c.n}<br>在庫</th>`).join("")
+  }${CHEMS.map(c=>`<th>${c.n}<br>受入</th>`).join("")}${
+    CHEMS.map(c=>`<th>${c.n}<br>補正</th>`).join("")
+  }${CHEMS.map(c=>`<th>${c.n}<br>実測</th>`).join("")}</tr></thead><tbody>`;
+  rows.forEach(r=>{
+    chtml+=`<tr>
+      <td>${r.date.getDate()}</td><td>${dow(r.date)}</td>
+      <td>${chip(r.key,"dayOn",r.day.dayOn)}</td>
+      <td>${chip(r.key,"nightOn",r.day.nightOn)}</td>`;
+    CHEMS.forEach(c=>{
+      const inv=r[c.k].inv;
+      const st=stat(inv,num(state.set.line1[c.k]),num(state.set.line2[c.k]));
+      chtml+=`<td><span class="pill ${st}">${fmt(inv)}</span></td>`;
+    });
+    CHEMS.forEach(c=>{
+      const ph=r[c.k].plan;
+      const v=r.day.receipt[c.k]||"";
+      chtml+=`<td><input class="num" data-p="${r.key}.receipt.${c.k}" type="number" value="${v==0?"":v}" placeholder="${ph>0?("予定:"+Math.round(ph)):""}"></td>`;
+    });
+    CHEMS.forEach(c=>{
+      const v=r.day.adjust[c.k]||"";
+      chtml+=`<td><input class="num" data-p="${r.key}.adjust.${c.k}" type="number" value="${v==0?"":v}"></td>`;
+    });
+    CHEMS.forEach(c=>{
+      const v=(r.day.actual[c.k]??"");
+      chtml+=`<td><input class="num" data-p="${r.key}.actual.${c.k}" type="number" value="${v}"></td>`;
+    });
+    chtml+=`</tr>`;
+  });
+  chtml+=`</tbody></table>`;
+  document.getElementById("cal").innerHTML=chtml;
+
+  let ohtml=`<div class="hint">納品予定日と数量を入れると、カレンダー受入（予定）に反映されます。</div>
+    <div style="margin:8px 0"><button id="add" class="secondary">＋行追加</button></div>
+    <table><thead><tr><th class="left">薬品</th><th>納品予定日</th><th>数量(L)</th><th>削除</th></tr></thead><tbody>`;
+  state.orders.forEach((o,i)=>{
+    ohtml+=`<tr>
+      <td class="left"><select data-oi="${i}" data-f="chem">${CHEMS.map(c=>`<option value="${c.k}" ${c.k===o.chem?"selected":""}>${c.n}</option>`).join("")}</select></td>
+      <td><input data-oi="${i}" data-f="delivery" type="date" value="${o.delivery||""}"></td>
+      <td><input data-oi="${i}" data-f="qty" type="number" value="${o.qty||""}"></td>
+      <td><button class="secondary" data-del="${i}">削除</button></td>
+    </tr>`;
+  });
+  ohtml+=`</tbody></table>`;
+  document.getElementById("ord").innerHTML=ohtml;
+
+  document.querySelectorAll(".chip").forEach(el=>{
+    el.onclick=()=>{
+      const k=el.dataset.k, f=el.dataset.f;
+      state.days[k][f]=!state.days[k][f];
+      render();
+    }
+  });
+  document.querySelectorAll("input[data-p]").forEach(el=>{
+    el.onchange=()=>{
+      const parts=el.dataset.p.split(".");
+      const key=parts[0], group=parts[1], chem=parts[2];
+      if(group==="actual"){
+        state.days[key][group][chem] = el.value==="" ? "" : Number(el.value);
+      }else{
+        state.days[key][group][chem] = el.value==="" ? 0 : Number(el.value);
+      }
+      render();
+    }
+  });
+  document.querySelectorAll("input[data-s]").forEach(el=>{
+    el.onchange=()=>{
+      const [group,chem]=el.dataset.s.split(".");
+      state.set[group][chem] = el.value==="" ? 0 : Number(el.value);
+      render();
+    }
+  });
+  document.getElementById("add").onclick=()=>{
+    state.orders.push({chem:"naoh",delivery:"",qty:""});
+    render();
+  };
+  document.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.onclick=()=>{ state.orders.splice(Number(btn.dataset.del),1); render(); }
+  });
+  document.querySelectorAll("[data-oi]").forEach(el=>{
+    el.onchange=()=>{
+      const i=Number(el.dataset.oi), f=el.dataset.f;
+      state.orders[i][f]=el.value;
+      render();
+    }
+  });
+}
+function rowInputs(label, key, step=1){
+  return `<tr><td class="left">${label}</td>${
+    CHEMS.map(c=>`<td><input class="num" data-s="${key}.${c.k}" type="number" step="${step}" value="${state.set[key][c.k]}"></td>`).join("")
+  }</tr>`;
+}
+function chip(key,f,on){ return `<span class="chip ${on?"on":""}" data-k="${key}" data-f="${f}">${on?"☑":"☐"}</span>` }
+
+const ySel=document.getElementById("y");
+const mSel=document.getElementById("m");
+for(let y=today.getFullYear()-1;y<=today.getFullYear()+3;y++){
+  const o=document.createElement("option");o.value=y;o.textContent=y;if(y===state.meta.y)o.selected=true;ySel.appendChild(o);
+}
+for(let m=1;m<=12;m++){
+  const o=document.createElement("option");o.value=m;o.textContent=m;if(m===state.meta.m)o.selected=true;mSel.appendChild(o);
+}
+ySel.onchange=()=>{state.meta.y=Number(ySel.value);render();}
+mSel.onchange=()=>{state.meta.m=Number(mSel.value);render();}
+document.getElementById("save").onclick=save;
+document.getElementById("reset").onclick=()=>{ if(confirm("初期化しますか？")) reset(); }
+document.getElementById("weekday").onclick=()=>{
+  const y=state.meta.y,m=state.meta.m;
+  for(let d=1; d<=dim(y,m); d++){
+    const date=new Date(y,m-1,d);
+    const key=ymd(y,m,d);
+    ensureDay(key,date);
+    const wk=!weekend(date);
+    state.days[key].dayOn=wk;
+    state.days[key].nightOn=wk;
+  }
+  render();
+};
+document.getElementById("tcal").onclick=()=>{
+  document.getElementById("tcal").classList.add("active");
+  document.getElementById("tord").classList.remove("active");
+  document.getElementById("cal").style.display="";
+  document.getElementById("ord").style.display="none";
+};
+document.getElementById("tord").onclick=()=>{
+  document.getElementById("tord").classList.add("active");
+  document.getElementById("tcal").classList.remove("active");
+  document.getElementById("cal").style.display="none";
+  document.getElementById("ord").style.display="";
+};
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+render();
+</script>
+</body>
+</html>
