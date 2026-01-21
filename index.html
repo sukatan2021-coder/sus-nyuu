@@ -249,7 +249,20 @@
     .alertBanner .msg{font-size:12px;color:var(--muted)}
     .alertBanner.danger{border-color: rgba(255,46,85,.55); background: rgba(255,46,85,.12);}
     .alertBanner.warn{border-color: rgba(255,204,102,.45); background: rgba(255,204,102,.10);}
-  </style>
+  
+    @media print{
+      body{background:#fff;color:#000;}
+      header{position:static;background:#fff;border-bottom:1px solid #ccc;}
+      .topbar .controls, #btnSave, #btnReset, #btnPrev, #btnNext, #btnPrint, #chipView{display:none !important;}
+      .layout{grid-template-columns: 1fr; padding:0;}
+      .card{box-shadow:none;border:1px solid #ccc;}
+      .monthsGrid{grid-template-columns: 1fr 1fr 1fr;}
+      .sub{color:#333;}
+      .kpi, .hint, .tiny, .msg{color:#111;}
+      table{color:#000;}
+    }
+
+</style>
 </head>
 <body>
   <header>
@@ -267,6 +280,7 @@
         <select class="select" id="selYear"></select>
         <select class="select" id="selMonth"></select>
         <button class="btn big ghost" id="btnNext">次の月 ▶</button>
+        <button class="btn big ghost" id="btnPrint">🖨 印刷</button>
         <button class="btn big primary" id="btnSave">保存</button>
         <button class="btn big danger" id="btnReset">初期化</button>
       </div>
@@ -429,6 +443,9 @@ const defaults = {
   line1: { caustic:1700, ferric:700, sulfur:300 },
   line2: { caustic:1000, ferric:700, sulfur:300 },
   incoming: { caustic:600, ferric:1500, sulfur:1500 },
+  monthStartMap: {
+    // "YYYY-MM": { caustic:..., ferric:..., sulfur:... }
+  },
   // per-date overrides
   days: {
     // "YYYY-MM-DD": { dayOn:true, nightOn:true, receive:{...}, adjust:{...} }
@@ -599,6 +616,7 @@ const btnPrev = document.getElementById("btnPrev");
 const btnNext = document.getElementById("btnNext");
 const btnSave = document.getElementById("btnSave");
 const btnReset = document.getElementById("btnReset");
+const btnPrint = document.getElementById("btnPrint");
 const btnWeekdayOn = document.getElementById("btnWeekdayOn");
 const monthsGrid = document.getElementById("monthsGrid");
 const kpis = document.getElementById("kpis");
@@ -705,6 +723,41 @@ function applySettingsFromUI(){
   state.incoming.ferric  = Number(document.getElementById("in_ferric").value  || 0);
   state.incoming.sulfur  = Number(document.getElementById("in_sulfur").value  || 0);
 }
+
+
+function ymKey(y,m){ return `${y}-${pad(m)}`; }
+
+function setStartInventoryInputs(invObj){
+  document.getElementById("start_caustic").value = Math.round((invObj.caustic||0)*10)/10;
+  document.getElementById("start_ferric").value  = Math.round((invObj.ferric||0)*10)/10;
+  document.getElementById("start_sulfur").value  = Math.round((invObj.sulfur||0)*10)/10;
+  // reflect into state too
+  state.startInventory.caustic = Number(document.getElementById("start_caustic").value || 0);
+  state.startInventory.ferric  = Number(document.getElementById("start_ferric").value  || 0);
+  state.startInventory.sulfur  = Number(document.getElementById("start_sulfur").value  || 0);
+}
+
+function getCurrentMonthEndInv(y,m){
+  applySettingsFromUI(); // sync latest
+  const ms = computeRange(y,m,1);
+  return ms[0]?.endInv ? structuredClone(ms[0].endInv) : structuredClone(state.startInventory);
+}
+
+function autoCarryoverIfNeeded(fromY,fromM,toY,toM){
+  const delta = (toY-fromY)*12 + (toM-fromM);
+  if(delta===1){
+    const endInv = getCurrentMonthEndInv(fromY,fromM);
+    state.monthStartMap[ymKey(toY,toM)] = structuredClone(endInv);
+    setStartInventoryInputs(endInv);
+  }else{
+    const stored = state.monthStartMap[ymKey(toY,toM)];
+    if(stored){
+      setStartInventoryInputs(stored);
+    }
+  }
+}
+
+
 
 function renderKPI(months){
   // Show current month first day start inventory and last known (today or end of month) as "現在"
@@ -913,21 +966,31 @@ function setMonth(y,m){
    Actions
 ===================== */
 btnPrev.addEventListener("click",()=>{
+  const curY=viewY, curM=viewM;
   const prev = addMonths(viewY, viewM, -1);
+  autoCarryoverIfNeeded(curY,curM,prev.y,prev.m);
   viewY = prev.y; viewM = prev.m;
   renderAll();
 });
 btnNext.addEventListener("click",()=>{
+  const curY=viewY, curM=viewM;
   const next = addMonths(viewY, viewM, 1);
+  autoCarryoverIfNeeded(curY,curM,next.y,next.m);
   viewY = next.y; viewM = next.m;
   renderAll();
 });
 selYear.addEventListener("change",()=>{
-  viewY = Number(selYear.value);
+  const curY=viewY, curM=viewM;
+  const newY = Number(selYear.value);
+  autoCarryoverIfNeeded(curY,curM,newY,curM);
+  viewY = newY;
   renderAll();
 });
 selMonth.addEventListener("change",()=>{
-  viewM = Number(selMonth.value);
+  const curY=viewY, curM=viewM;
+  const newM = Number(selMonth.value);
+  autoCarryoverIfNeeded(curY,curM,curY,newM);
+  viewM = newM;
   renderAll();
 });
 
@@ -938,6 +1001,8 @@ btnSave.addEventListener("click",()=>{
   chip.textContent="保存しました ✅";
   setTimeout(()=>chip.textContent="チェックで在庫が減ります", 1200);
 });
+
+btnPrint.addEventListener("click",()=>{ window.print(); });
 
 btnReset.addEventListener("click",()=>{
   if(!confirm("初期化しますか？（全データが消えます）")) return;
