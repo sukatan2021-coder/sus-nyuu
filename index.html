@@ -3,639 +3,985 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>乳化処理 在庫・発注カレンダー</title>
+  <title>乳化処理 在庫・発注カレンダー（3ヶ月表示）</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#0b1320" />
   <style>
     :root{
-      --bg:#0b1220; --card:#121a2a; --card2:#0f172a;
-      --text:#e5e7eb; --muted:#9ca3af; --accent:#38bdf8;
-      --warn:#fbbf24; --danger:#fb7185; --ok:#34d399;
-      --line:#243046;
-      --font: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      --bg:#0b1320;
+      --panel:#0f1b2e;
+      --panel2:#0c1627;
+      --text:#e8eefc;
+      --muted:#9fb1d6;
+      --accent:#32b5ff;
+      --ok:#2ee59d;
+      --warn:#ffcc66;
+      --danger:#ff5d7a;
+      --danger2:#ff2e55;
+      --line:#1f3557;
+      --chip:#142743;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
     }
-    body{margin:0;background:linear-gradient(180deg,#060b14,#0b1220);color:var(--text);font-family:var(--font);}
-    .wrap{max-width:1100px;margin:0 auto;padding:14px;}
-    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:34px;height:34px;border-radius:10px;background:#0ea5e9;display:grid;place-items:center;font-weight:800}
-    h1{font-size:18px;margin:0}
-    .sub{font-size:12px;color:var(--muted)}
-    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .btn{background:var(--card);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:14px;font-weight:700;cursor:pointer}
-    .btn:active{transform:scale(.98)}
-    .btn.primary{background:#0ea5e9;border-color:#0ea5e9;color:#062235}
-    .btn.ghost{background:transparent}
-    .pill{background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.35);padding:8px 10px;border-radius:999px;font-weight:700}
-    .grid{display:grid;grid-template-columns: 360px 1fr;gap:14px;margin-top:14px}
-    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
-    .card{background:rgba(18,26,42,.9);border:1px solid var(--line);border-radius:18px;padding:14px}
-    .card h2{margin:0 0 10px 0;font-size:16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .field{display:flex;flex-direction:column;gap:6px;min-width:120px}
-    label{font-size:12px;color:var(--muted)}
-    input, select{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:14px;font-size:14px}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    th{font-size:12px;color:var(--muted);text-align:left;padding:0 8px}
-    td{background:rgba(15,23,42,.75);border:1px solid var(--line);padding:10px 8px;border-left-width:0;border-right-width:0}
-    tr td:first-child{border-left-width:1px;border-radius:14px 0 0 14px}
-    tr td:last-child{border-right-width:1px;border-radius:0 14px 14px 0}
-    .small{font-size:12px;color:var(--muted)}
-    .kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
-    .kpi .box{background:rgba(15,23,42,.7);border:1px solid var(--line);border-radius:16px;padding:10px}
-    .kpi .title{font-size:12px;color:var(--muted)}
-    .kpi .val{font-size:18px;font-weight:900;margin-top:4px}
-    .tag{display:inline-block;font-weight:900;padding:4px 8px;border-radius:999px;font-size:12px}
-    .tag.ok{background:rgba(52,211,153,.18);border:1px solid rgba(52,211,153,.35)}
-    .tag.warn{background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.35)}
-    .tag.danger{background:rgba(251,113,133,.18);border:1px solid rgba(251,113,133,.35)}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{background:rgba(15,23,42,.55);border:1px solid var(--line);padding:10px 12px;border-radius:999px;cursor:pointer;font-weight:900}
-    .tab.active{background:rgba(14,165,233,.22);border-color:rgba(14,165,233,.55)}
-    .calwrap{display:flex;flex-direction:column;gap:10px}
-    .months{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    @media (max-width: 980px){.months{grid-template-columns:1fr}}
-    .month{background:rgba(15,23,42,.55);border:1px solid var(--line);border-radius:18px;padding:10px}
-    .month h3{margin:0 0 8px 0;font-size:15px}
-    .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-    .dow{font-size:11px;color:var(--muted);text-align:center}
-    .day{background:rgba(2,6,23,.35);border:1px solid rgba(36,48,70,.8);border-radius:14px;padding:8px;min-height:82px;display:flex;flex-direction:column;gap:6px}
-    .day.muted{opacity:.45}
-    .day.today{outline:2px solid rgba(56,189,248,.6)}
-    .topline{display:flex;justify-content:space-between;align-items:center}
-    .dnum{font-weight:900}
-    .shift{display:flex;gap:6px;align-items:center}
-    .shift label{color:var(--text);font-size:12px}
-    .chk{transform:scale(1.2)}
-    .mini{display:flex;flex-direction:column;gap:3px}
-    .mini .line{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
-    .mini .line strong{color:var(--text)}
-    .bar{height:6px;border-radius:999px;background:rgba(156,163,175,.22);overflow:hidden;border:1px solid rgba(36,48,70,.8)}
-    .bar > div{height:100%}
-    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-    .dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:6px}
-    .foot{margin-top:12px;color:var(--muted);font-size:12px}
-    .dangerText{color:var(--danger);font-weight:900}
-    .okText{color:var(--ok);font-weight:900}
-    .warnText{color:var(--warn);font-weight:900}
-    .note{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);border-radius:16px;padding:10px}
-    .hr{height:1px;background:rgba(36,48,70,.8);margin:12px 0}
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Arial, sans-serif;
+      background: radial-gradient(1400px 700px at 10% -10%, rgba(50,181,255,.18), transparent 60%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(46,229,157,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:50;
+      background: linear-gradient(to bottom, rgba(11,19,32,.92), rgba(11,19,32,.65));
+      backdrop-filter: blur(10px);
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .topbar{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width:260px;
+    }
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background:linear-gradient(135deg, rgba(50,181,255,.95), rgba(46,229,157,.75));
+      box-shadow: var(--shadow);
+      display:grid;place-items:center;
+      font-weight:800;
+    }
+    .brand h1{
+      font-size:16px; margin:0; line-height:1.1;
+    }
+    .brand .sub{font-size:12px;color:var(--muted)}
+    .controls{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .select, .btn{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(15,27,46,.85);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+    }
+    .btn{
+      cursor:pointer;
+      user-select:none;
+      display:inline-flex; gap:8px; align-items:center;
+      font-weight:650;
+    }
+    .btn:hover{filter:brightness(1.05)}
+    .btn.primary{background: linear-gradient(135deg, rgba(50,181,255,.95), rgba(46,229,157,.65)); border-color: transparent;}
+    .btn.danger{background: rgba(255,93,122,.14); border-color: rgba(255,93,122,.32);}
+    .btn.ghost{background: rgba(15,27,46,.55);}
+    .btn.big{padding:12px 14px; font-size:15px; border-radius:16px;}
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(20,39,67,.65);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:14px;
+      padding:14px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    @media (max-width: 1100px){
+      .layout{grid-template-columns:1fr;}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(15,27,46,.88), rgba(12,22,39,.78));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card .hd .title{
+      font-size:14px; margin:0; font-weight:800;
+      display:flex; align-items:center; gap:8px;
+    }
+    .card .bd{padding:12px 14px;}
+    .grid2{
+      display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    }
+    .grid3{
+      display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;
+    }
+    .kpi{
+      background: rgba(20,39,67,.35);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding:10px;
+    }
+    .kpi .k{font-size:12px;color:var(--muted)}
+    .kpi .v{font-size:18px;font-weight:900;margin-top:2px}
+    .badge{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(20,39,67,.55);
+      font-size:12px; font-weight:800;
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .b-ok{color:var(--ok); border-color: rgba(46,229,157,.35); background: rgba(46,229,157,.10)}
+    .b-warn{color:var(--warn); border-color: rgba(255,204,102,.38); background: rgba(255,204,102,.10)}
+    .b-danger{color:var(--danger2); border-color: rgba(255,46,85,.55); background: rgba(255,46,85,.10)}
+    .blink{
+      animation: blink 1.0s steps(1,end) infinite;
+    }
+    @keyframes blink{
+      50%{filter:brightness(1.35)}
+    }
+    .tableWrap{overflow:auto; max-height: calc(100vh - 210px);}
+    table{
+      border-collapse:separate;
+      border-spacing:0;
+      width:100%;
+      min-width: 920px;
+      font-size:13px;
+    }
+    th, td{
+      padding:8px 8px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      white-space:nowrap;
+      vertical-align:middle;
+    }
+    th{
+      position:sticky;
+      top:0;
+      z-index:10;
+      background: rgba(11,19,32,.92);
+      color:var(--muted);
+      font-size:12px;
+      text-align:left;
+    }
+    .mBlock{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .mHeader{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:10px;
+    }
+    .mHeader .mh{
+      display:flex; align-items:center; gap:10px;
+      font-weight:900;
+    }
+    .mHeader .mh .monthTitle{
+      font-size:16px;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .inp{
+      width:100%;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(8,14,26,.55);
+      color:var(--text);
+      outline:none;
+      font-size:13px;
+    }
+    .tiny{font-size:11px;color:var(--muted)}
+    .pill{
+      display:inline-flex; align-items:center; justify-content:center;
+      min-width:54px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(20,39,67,.35);
+      font-weight:850;
+    }
+    .p-warn{border-color: rgba(255,204,102,.45); background: rgba(255,204,102,.10); color: var(--warn);}
+    .p-danger{border-color: rgba(255,46,85,.55); background: rgba(255,46,85,.12); color: var(--danger2);}
+    .p-ok{border-color: rgba(46,229,157,.35); background: rgba(46,229,157,.10); color: var(--ok);}
+    .ck{
+      width:22px;height:22px;
+      accent-color: var(--accent);
+      transform: translateY(1px);
+    }
+    .rowAlert1 td.stockCell{background: rgba(255,204,102,.08);}
+    .rowAlert2 td.stockCell{background: rgba(255,46,85,.10);}
+    .rowAlert2 td.stockCell .pill{animation: blink 1.0s steps(1,end) infinite;}
+    .sep{
+      height:10px;
+    }
+    .monthsGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      padding:12px;
+    }
+    @media (min-width: 1350px){
+      .monthsGrid{
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .tableWrap{max-height: calc(100vh - 265px);}
+      table{min-width: 820px;}
+    }
+    .alertBanner{
+      padding:10px 12px;
+      margin-top:10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(20,39,67,.35);
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .alertBanner strong{font-size:13px}
+    .alertBanner .msg{font-size:12px;color:var(--muted)}
+    .alertBanner.danger{border-color: rgba(255,46,85,.55); background: rgba(255,46,85,.12);}
+    .alertBanner.warn{border-color: rgba(255,204,102,.45); background: rgba(255,204,102,.10);}
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <header>
     <div class="topbar">
       <div class="brand">
-        <div class="logo">乳</div>
+        <div class="logo">液</div>
         <div>
           <h1>乳化処理 在庫・発注カレンダー</h1>
-          <div class="sub">今月・来月・再来月を連動表示（年またぎ対応）</div>
+          <div class="sub">3ヶ月同時表示 / アラート強化（保存あり）</div>
         </div>
       </div>
       <div class="controls">
-        <button class="btn ghost" id="prevBtn">◀ 前の月</button>
-        <span class="pill" id="viewLabel">----</span>
-        <button class="btn ghost" id="nextBtn">次の月 ▶</button>
-        <select id="rangeSel" title="表示範囲">
-          <option value="3">3ヶ月表示</option>
-          <option value="6">6ヶ月表示</option>
-          <option value="12">12ヶ月表示</option>
-        </select>
-        <button class="btn primary" id="saveBtn">保存</button>
-        <button class="btn" id="exportBtn">書出し(JSON)</button>
-        <button class="btn" id="importBtn">読込(JSON)</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none"/>
+        <span class="chip" id="chipView">表示：今月/来月/再来月</span>
+        <button class="btn big ghost" id="btnPrev">◀ 前の月</button>
+        <select class="select" id="selYear"></select>
+        <select class="select" id="selMonth"></select>
+        <button class="btn big ghost" id="btnNext">次の月 ▶</button>
+        <button class="btn big primary" id="btnSave">保存</button>
+        <button class="btn big danger" id="btnReset">初期化</button>
       </div>
     </div>
+  </header>
 
-    <div class="grid">
-      <div class="card">
-        <h2>設定（最初だけ）</h2>
-        <div class="note small">
-          ✅ <b>最初に1回だけ</b>「基準月（=最初に使い始めた月）」と「月初在庫」を入れてください。<br>
-          以降は、月送りしても在庫が自動でつながります。
-        </div>
-        <div class="row" style="margin-top:10px">
-          <div class="field">
-            <label>基準年</label>
-            <input id="baseYear" type="number" min="2020" max="2100"/>
+  <div class="layout">
+    <!-- LEFT -->
+    <section class="card" id="leftPanel">
+      <div class="hd">
+        <div class="title">ダッシュボード <span class="chip">黄色=第1 / 赤=第2</span></div>
+        <span class="badge" id="badgeAll">OK</span>
+      </div>
+      <div class="bd">
+        <div class="grid3" id="kpis"></div>
+
+        <div class="alertBanner" id="alertBanner" style="display:none;">
+          <div>
+            <strong id="alertTitle">アラート</strong>
+            <div class="msg" id="alertMsg">内容</div>
           </div>
-          <div class="field">
-            <label>基準月</label>
-            <input id="baseMonth" type="number" min="1" max="12"/>
-          </div>
-          <div class="field" style="min-width:140px">
-            <label>納期(発注→納品) 日数</label>
-            <input id="leadDays" type="number" min="0" max="60"/>
-          </div>
+          <span class="badge b-danger blink" id="alertBadge">要対応</span>
         </div>
 
-        <div class="hr"></div>
+        <div class="sep"></div>
 
-        <h2>薬品と使用量</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>薬品</th><th>月初在庫(L)</th><th>昼使用(L)</th><th>夜使用(L)</th>
-              <th>発注ライン1(cm)</th><th>発注ライン2(cm)</th><th>入荷量(L)</th>
-            </tr>
-          </thead>
-          <tbody id="chemRows"></tbody>
-        </table>
-
-        <div class="row" style="justify-content:space-between;align-items:flex-end">
-          <div class="small">基準：100L = 10cm（1cm=10L） / タンク最大 2000L</div>
-          <div class="row">
-            <button class="btn" id="wkBtn">平日☑ / 土日☐</button>
-            <button class="btn" id="clearBtn">全部☐</button>
+        <div class="card" style="border-radius:14px;">
+          <div class="hd">
+            <div class="title">設定 <span class="chip">入力で即反映</span></div>
           </div>
-        </div>
+          <div class="bd">
+            <div class="hint">月初在庫(L)だけ入れればOK。稼働☑で減算、受入で加算。実測/補正はその日の在庫を上書きします。</div>
+            <div class="sep"></div>
 
-        <div class="hr"></div>
-        <h2>今日の目安</h2>
-        <div class="kpi" id="kpi"></div>
+            <div class="grid2">
+              <div class="kpi">
+                <div class="k">タンク最大(L)</div>
+                <input class="inp" id="inpTankMax" type="number" min="0" step="1">
+                <div class="tiny">例：2000</div>
+              </div>
+              <div class="kpi">
+                <div class="k">納期(営業日)</div>
+                <input class="inp" id="inpLeadDays" type="number" min="0" step="1">
+                <div class="tiny">例：14</div>
+              </div>
+            </div>
 
-        <div class="foot">
-          ※ iPadとPCは自動同期しません。端末間は「書出し(JSON)」→「読込(JSON)」で引き継げます。
+            <div class="sep"></div>
+
+            <div class="kpi">
+              <div class="k" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>月初在庫(L)</span>
+                <span class="tiny">※今月の月初</span>
+              </div>
+              <div class="grid3">
+                <input class="inp" id="start_caustic" type="number" min="0" step="0.1" placeholder="苛性ソーダ">
+                <input class="inp" id="start_ferric" type="number" min="0" step="0.1" placeholder="塩化第二鉄">
+                <input class="inp" id="start_sulfur" type="number" min="0" step="0.1" placeholder="希硫酸">
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="kpi">
+              <div class="k">昼使用(L) / 夜使用(L)</div>
+              <div class="grid3">
+                <div>
+                  <div class="tiny">苛性ソーダ</div>
+                  <input class="inp" id="use_day_caustic" type="number" step="0.1">
+                  <input class="inp" id="use_night_caustic" type="number" step="0.1" style="margin-top:6px;">
+                </div>
+                <div>
+                  <div class="tiny">塩化第二鉄</div>
+                  <input class="inp" id="use_day_ferric" type="number" step="0.1">
+                  <input class="inp" id="use_night_ferric" type="number" step="0.1" style="margin-top:6px;">
+                </div>
+                <div>
+                  <div class="tiny">希硫酸</div>
+                  <input class="inp" id="use_day_sulfur" type="number" step="0.1">
+                  <input class="inp" id="use_night_sulfur" type="number" step="0.1" style="margin-top:6px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="kpi">
+              <div class="k">発注ライン(L)</div>
+              <div class="grid3">
+                <div>
+                  <div class="tiny">苛性ソーダ 第1/第2</div>
+                  <input class="inp" id="line1_caustic" type="number" step="1">
+                  <input class="inp" id="line2_caustic" type="number" step="1" style="margin-top:6px;">
+                </div>
+                <div>
+                  <div class="tiny">塩化第二鉄 第1/第2</div>
+                  <input class="inp" id="line1_ferric" type="number" step="1">
+                  <input class="inp" id="line2_ferric" type="number" step="1" style="margin-top:6px;">
+                </div>
+                <div>
+                  <div class="tiny">希硫酸 第1/第2</div>
+                  <input class="inp" id="line1_sulfur" type="number" step="1">
+                  <input class="inp" id="line2_sulfur" type="number" step="1" style="margin-top:6px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="kpi">
+              <div class="k">入荷量(L)</div>
+              <div class="grid3">
+                <input class="inp" id="in_caustic" type="number" step="1" placeholder="苛性ソーダ">
+                <input class="inp" id="in_ferric" type="number" step="1" placeholder="塩化第二鉄">
+                <input class="inp" id="in_sulfur" type="number" step="1" placeholder="希硫酸">
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <button class="btn big ghost" id="btnWeekdayOn">平日ON / 土日OFF（今月）</button>
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="card calwrap">
-        <div class="tabs">
-          <div class="tab" id="tabThis">今月</div>
-          <div class="tab" id="tabNext">来月</div>
-          <div class="tab" id="tabNext2">再来月</div>
+    <!-- RIGHT -->
+    <section class="card">
+      <div class="hd">
+        <div class="title">3ヶ月カレンダー <span class="chip">今月=編集 / 来月・再来月=予測</span></div>
+        <div class="controls">
+          <span class="chip" id="chipInfo">チェックで在庫が減ります</span>
         </div>
-        <div class="legend small">
-          <span><span class="dot" style="background:rgba(52,211,153,.7)"></span>安全</span>
-          <span><span class="dot" style="background:rgba(251,191,36,.8)"></span>発注ライン1付近</span>
-          <span><span class="dot" style="background:rgba(251,113,133,.85)"></span>発注ライン2付近</span>
-        </div>
-        <div class="months" id="months"></div>
       </div>
-    </div>
+      <div class="monthsGrid" id="monthsGrid"></div>
+    </section>
   </div>
 
 <script>
-const STORAGE_KEY = "emulsion_inventory_v4";
-const MAX_L = 2000;
-const L_PER_CM = 10; // 1cm=10L
-
+/* =====================
+   Storage + Defaults
+===================== */
+const LS_KEY = "nyuu_pwa_v3m_alert";
 const CHEMS = [
-  {id:"naoh", name:"苛性ソーダ", inDefault:600, dayUse:4.0, nightUse:4.0, line1cm:170, line2cm:100},
-  {id:"fecl2", name:"塩化第二鉄", inDefault:1500, dayUse:2.0, nightUse:2.0, line1cm:70, line2cm:70},
-  {id:"h2so4", name:"希硫酸",   inDefault:1500, dayUse:0.5, nightUse:0.5, line1cm:30, line2cm:30},
+  { key:"caustic", label:"苛性ソーダ" },
+  { key:"ferric",  label:"塩化第二鉄" },
+  { key:"sulfur",  label:"希硫酸" }
 ];
 
-function ymd(d){
-  const y=d.getFullYear();
-  const m=String(d.getMonth()+1).padStart(2,'0');
-  const dd=String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
-}
-function parseYMD(s){
-  const [y,m,d]=s.split("-").map(Number);
-  return new Date(y, m-1, d);
-}
-function monthStart(y,m){ return new Date(y, m-1, 1); }
-function addMonths(y,m,delta){
-  const d=new Date(y, m-1, 1);
-  d.setMonth(d.getMonth()+delta);
-  return {y:d.getFullYear(), m:d.getMonth()+1};
-}
-function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
-function isWeekend(d){ const w=d.getDay(); return w===0 || w===6; }
+const defaults = {
+  tankMax: 2000,
+  leadDays: 14,
+  startYear: new Date().getFullYear(),
+  startMonth: new Date().getMonth()+1,
+  startInventory: { caustic:830, ferric:130, sulfur:114 },
+  use: {
+    day:   { caustic:4, ferric:2, sulfur:0.5 },
+    night: { caustic:4, ferric:2, sulfur:0.5 }
+  },
+  line1: { caustic:1700, ferric:700, sulfur:300 },
+  line2: { caustic:1000, ferric:700, sulfur:300 },
+  incoming: { caustic:600, ferric:1500, sulfur:1500 },
+  // per-date overrides
+  days: {
+    // "YYYY-MM-DD": { dayOn:true, nightOn:true, receive:{...}, adjust:{...} }
+  }
+};
 
-function defaultState(){
-  const now=new Date();
-  const by=now.getFullYear();
-  const bm=now.getMonth()+1;
-  const base = {year:by, month:bm};
-  const chems = {};
-  CHEMS.forEach(c=>{
-    chems[c.id]={
-      monthStartL: 0,
-      dayUse:c.dayUse, nightUse:c.nightUse,
-      line1cm:c.line1cm, line2cm:c.line2cm,
-      inQty:c.inDefault
-    };
-  });
-  return {
-    base, leadDays: 14,
-    chems,
-    work: {},   // date -> {day:true/false, night:true/false}
-    receipt: {},// date -> {naoh:0,fecl2:0,h2so4:0}
-    measure: {},// date -> {naoh:null,...}
-    view: {year:by, month:bm},
-    range: 3
-  };
-}
-
-let state = load();
-
-function load(){
+function loadState(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    const s=JSON.parse(raw);
-    // migrate: ensure keys
-    if(!s.chems) return defaultState();
-    if(!s.view) s.view = {...s.base};
-    if(!s.range) s.range = 3;
-    return s;
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return structuredClone(defaults);
+    const obj = JSON.parse(raw);
+    // merge shallow
+    return deepMerge(structuredClone(defaults), obj);
   }catch(e){
-    return defaultState();
+    console.warn(e);
+    return structuredClone(defaults);
   }
 }
-function save(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  toast("保存しました");
+function saveState(){
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
 }
-function toast(msg){
-  const el=document.getElementById("viewLabel");
-  const old=el.textContent;
-  el.textContent = msg;
-  setTimeout(()=>{ updateViewLabel(); }, 900);
-}
-
-function updateViewLabel(){
-  const {year,month}=state.view;
-  document.getElementById("viewLabel").textContent = `${year}年 ${month}月`;
-}
-
-function buildChemRows(){
-  const tbody=document.getElementById("chemRows");
-  tbody.innerHTML="";
-  CHEMS.forEach(c=>{
-    const v=state.chems[c.id];
-    const tr=document.createElement("tr");
-    tr.innerHTML = `
-      <td><b>${c.name}</b></td>
-      <td><input data-k="monthStartL" data-id="${c.id}" type="number" min="0" max="${MAX_L}" value="${v.monthStartL ?? 0}"></td>
-      <td><input data-k="dayUse" data-id="${c.id}" type="number" step="0.1" min="0" value="${v.dayUse}"></td>
-      <td><input data-k="nightUse" data-id="${c.id}" type="number" step="0.1" min="0" value="${v.nightUse}"></td>
-      <td><input data-k="line1cm" data-id="${c.id}" type="number" min="0" max="200" value="${v.line1cm}"></td>
-      <td><input data-k="line2cm" data-id="${c.id}" type="number" min="0" max="200" value="${v.line2cm}"></td>
-      <td><input data-k="inQty" data-id="${c.id}" type="number" min="0" value="${v.inQty}"></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  tbody.querySelectorAll("input").forEach(inp=>{
-    inp.addEventListener("change", ()=>{
-      const id=inp.dataset.id;
-      const k=inp.dataset.k;
-      let val=parseFloat(inp.value||"0");
-      if(k==="monthStartL") val = clamp(val,0,MAX_L);
-      state.chems[id][k]=val;
-      save();
-      render();
-    });
-  });
-}
-
-function setBaseToTodayIfEmpty(){
-  // if monthStartL are all 0 and base not explicitly set? leave; user can set.
-}
-
-function ensureWorkEntry(dateStr){
-  if(!state.work[dateStr]){
-    const d=parseYMD(dateStr);
-    const wk = !isWeekend(d);
-    state.work[dateStr]={day:wk, night:wk};
-  }
-}
-
-function autoWeekdays(){
-  // set visible months weekdays checked, weekend unchecked
-  const months = monthsInRange();
-  months.forEach(({y,m})=>{
-    const start=monthStart(y,m);
-    const end=new Date(y, m, 0);
-    for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
-      const ds=ymd(d);
-      ensureWorkEntry(ds);
-      const wk=!isWeekend(d);
-      state.work[ds].day=wk;
-      state.work[ds].night=wk;
+function deepMerge(a,b){
+  for(const k in b){
+    if(b[k] && typeof b[k]==="object" && !Array.isArray(b[k])){
+      if(!a[k] || typeof a[k]!=="object") a[k]={};
+      deepMerge(a[k], b[k]);
+    }else{
+      a[k]=b[k];
     }
-  });
-  save(); render();
-}
-function clearAll(){
-  const months = monthsInRange();
-  months.forEach(({y,m})=>{
-    const start=monthStart(y,m);
-    const end=new Date(y, m, 0);
-    for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
-      const ds=ymd(d);
-      ensureWorkEntry(ds);
-      state.work[ds].day=false;
-      state.work[ds].night=false;
-    }
-  });
-  save(); render();
-}
-
-function monthsInRange(){
-  const {year,month}=state.view;
-  const list=[];
-  for(let i=0;i<state.range;i++){
-    const t=addMonths(year,month,i);
-    list.push(t);
   }
-  return list;
+  return a;
+}
+let state = loadState();
+
+/* =====================
+   Date helpers
+===================== */
+function pad(n){ return String(n).padStart(2,"0"); }
+function keyDate(y,m,d){ return `${y}-${pad(m)}-${pad(d)}`; }
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+const W = ["日","月","火","水","木","金","土"];
+function weekday(y,m,d){ return new Date(y,m-1,d).getDay(); }
+function addMonths(y,m,delta){
+  const dt = new Date(y, m-1+delta, 1);
+  return { y: dt.getFullYear(), m: dt.getMonth()+1 };
+}
+function compareYM(aY,aM,bY,bM){
+  if(aY!==bY) return aY-bY;
+  return aM-bM;
 }
 
-function getAnchorDate(){
-  // base month start
-  return monthStart(state.base.year, state.base.month);
+/* =====================
+   Compute inventories sequentially from (startYear/startMonth/1)
+===================== */
+function getDayRec(dateKey){
+  return state.days[dateKey] || null;
+}
+function setDayRec(dateKey, rec){
+  state.days[dateKey] = rec;
+}
+function ensureDayRec(dateKey){
+  if(!state.days[dateKey]) state.days[dateKey] = { dayOn:false, nightOn:false, receive:{}, adjust:{} };
+  if(!state.days[dateKey].receive) state.days[dateKey].receive = {};
+  if(!state.days[dateKey].adjust) state.days[dateKey].adjust = {};
+  return state.days[dateKey];
 }
 
-function calcInventoryForDate(targetDate){
-  // returns inventory for each chem at start of targetDate (morning before shifts and receipts)
-  const anchor=getAnchorDate();
-  const t= new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-  // if target before anchor, just return monthStartL as-is
-  const inv = {};
-  CHEMS.forEach(c=>{
-    inv[c.id]= clamp(parseFloat(state.chems[c.id].monthStartL||0),0,MAX_L);
-  });
-  if(t < anchor) return inv;
+function computeRange(fromY, fromM, monthsCount){
+  // compute from startYM up to endYM inclusive, but only return requested months
+  const startY = state.startYear;
+  const startM = state.startMonth;
 
-  for(let d=new Date(anchor); d < t; d.setDate(d.getDate()+1)){
-    const ds=ymd(d);
-    ensureWorkEntry(ds);
-    const w=state.work[ds];
-    // apply receipts at day end? We'll apply receipts at start of day for simplicity on that date, so add first:
-    const r=state.receipt[ds]||{};
-    CHEMS.forEach(c=>{
-      inv[c.id] = clamp(inv[c.id] + (parseFloat(r[c.id]||0)), 0, MAX_L);
-    });
-    // apply usage
-    CHEMS.forEach(c=>{
-      const use = (w.day?state.chems[c.id].dayUse:0) + (w.night?state.chems[c.id].nightUse:0);
-      inv[c.id] = clamp(inv[c.id] - use, 0, MAX_L);
-    });
-    // apply measurement override (end-of-day measured replaces next morning base)
-    const ms=state.measure[ds]||{};
-    CHEMS.forEach(c=>{
-      if(ms[c.id]!==undefined && ms[c.id]!==null && ms[c.id]!=="" ){
-        const mv=parseFloat(ms[c.id]);
-        if(!Number.isNaN(mv)) inv[c.id]=clamp(mv,0,MAX_L);
+  // We need beginning inventory at start date
+  let inv = structuredClone(state.startInventory);
+
+  // Iterate months from startYM to target end
+  const end = addMonths(fromY, fromM, monthsCount-1);
+  const months = [];
+  // We'll build a map of month key => list days
+  const want = [];
+  for(let i=0;i<monthsCount;i++){
+    const ym = addMonths(fromY, fromM, i);
+    want.push(`${ym.y}-${pad(ym.m)}`);
+  }
+
+  let curY = startY, curM = startM;
+
+  function monthKey(y,m){ return `${y}-${pad(m)}`; }
+
+  // helper to process one month
+  function processMonth(y,m, invStart){
+    const dim = daysInMonth(y,m);
+    const rows = [];
+    let invCur = structuredClone(invStart);
+
+    for(let d=1; d<=dim; d++){
+      const dk = keyDate(y,m,d);
+      const rec = ensureDayRec(dk);
+      // default pattern if not set explicitly: keep as stored; do not auto change here
+      let dayOn = !!rec.dayOn;
+      let nightOn = !!rec.nightOn;
+
+      // Apply receive before usage? In practice receive can happen daytime; we apply receive first then usage to be safe.
+      for(const c of CHEMS){
+        const add = Number(rec.receive?.[c.key] || 0);
+        invCur[c.key] += add;
       }
-    });
+
+      // Apply usage
+      if(dayOn){
+        for(const c of CHEMS){
+          invCur[c.key] -= Number(state.use.day[c.key] || 0);
+        }
+      }
+      if(nightOn){
+        for(const c of CHEMS){
+          invCur[c.key] -= Number(state.use.night[c.key] || 0);
+        }
+      }
+
+      // Apply adjust/measurement override if provided (>0 or >=0)
+      for(const c of CHEMS){
+        const adjVal = rec.adjust?.[c.key];
+        if(adjVal !== undefined && adjVal !== null && adjVal !== "" && !Number.isNaN(Number(adjVal))){
+          invCur[c.key] = Number(adjVal);
+        }
+        // clamp
+        if(invCur[c.key] < 0) invCur[c.key] = 0;
+        if(invCur[c.key] > state.tankMax) invCur[c.key] = state.tankMax;
+      }
+
+      const status = {};
+      for(const c of CHEMS){
+        const v = invCur[c.key];
+        if(v <= state.line2[c.key]) status[c.key] = 2;
+        else if(v <= state.line1[c.key]) status[c.key] = 1;
+        else status[c.key] = 0;
+      }
+
+      rows.push({ y,m,d, dk, w:weekday(y,m,d), dayOn, nightOn, inv: structuredClone(invCur), status });
+    }
+
+    return { y,m, startInv: invStart, endInv: rows[rows.length-1]?.inv || structuredClone(invStart), rows };
   }
-  return inv;
+
+  // Move curYM forward until reaching endYM
+  while(compareYM(curY,curM,end.y,end.m) <= 0){
+    const mk = monthKey(curY,curM);
+    const mdata = processMonth(curY,curM, inv);
+    inv = structuredClone(mdata.endInv);
+
+    if(want.includes(mk)){
+      months.push(mdata);
+    }
+    const next = addMonths(curY,curM,1);
+    curY = next.y; curM = next.m;
+  }
+
+  return months;
 }
 
-function statusForChem(invL, chemId){
-  const cm = invL / L_PER_CM;
-  const l1 = state.chems[chemId].line1cm;
-  const l2 = state.chems[chemId].line2cm;
-  if(cm <= l2) return "danger";
-  if(cm <= l1) return "warn";
-  return "ok";
+/* =====================
+   UI rendering
+===================== */
+const selYear = document.getElementById("selYear");
+const selMonth = document.getElementById("selMonth");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const btnSave = document.getElementById("btnSave");
+const btnReset = document.getElementById("btnReset");
+const btnWeekdayOn = document.getElementById("btnWeekdayOn");
+const monthsGrid = document.getElementById("monthsGrid");
+const kpis = document.getElementById("kpis");
+const badgeAll = document.getElementById("badgeAll");
+const alertBanner = document.getElementById("alertBanner");
+const alertTitle = document.getElementById("alertTitle");
+const alertMsg = document.getElementById("alertMsg");
+
+let viewY = state.startYear;
+let viewM = state.startMonth;
+
+function initSelectors(){
+  selYear.innerHTML="";
+  const y0 = state.startYear-1;
+  for(let y=y0; y<=y0+6; y++){
+    const opt=document.createElement("option");
+    opt.value=y; opt.textContent=`${y}年`;
+    selYear.appendChild(opt);
+  }
+  selMonth.innerHTML="";
+  for(let m=1;m<=12;m++){
+    const opt=document.createElement("option");
+    opt.value=m; opt.textContent=`${m}月`;
+    selMonth.appendChild(opt);
+  }
+  selYear.value=viewY;
+  selMonth.value=viewM;
 }
 
-function renderKPI(){
-  const box=document.getElementById("kpi");
-  box.innerHTML="";
-  const today=new Date();
-  const inv=calcInventoryForDate(today);
-  CHEMS.forEach(c=>{
-    const l=inv[c.id];
-    const cm = Math.round(l/L_PER_CM);
-    const st=statusForChem(l,c.id);
-    const tagClass = st==="ok"?"ok":(st==="warn"?"warn":"danger");
-    const tagText = st==="ok"?"安全":(st==="warn"?"発注1付近":"発注2付近");
-    // next dates for reaching line thresholds (simple forward simulation from today)
-    const proj = projectReachDates(today, c.id, l);
-    const lead = parseInt(state.leadDays||0);
-    const sug1 = proj.d1 ? new Date(proj.d1.getTime()-lead*86400000) : null;
-    const sug2 = proj.d2 ? new Date(proj.d2.getTime()-lead*86400000) : null;
+function bindSettings(){
+  // Tank max + lead
+  document.getElementById("inpTankMax").value = state.tankMax;
+  document.getElementById("inpLeadDays").value = state.leadDays;
+
+  // Start inventories (for view month as start month concept)
+  document.getElementById("start_caustic").value = state.startInventory.caustic;
+  document.getElementById("start_ferric").value  = state.startInventory.ferric;
+  document.getElementById("start_sulfur").value  = state.startInventory.sulfur;
+
+  // usage
+  document.getElementById("use_day_caustic").value   = state.use.day.caustic;
+  document.getElementById("use_night_caustic").value = state.use.night.caustic;
+  document.getElementById("use_day_ferric").value    = state.use.day.ferric;
+  document.getElementById("use_night_ferric").value  = state.use.night.ferric;
+  document.getElementById("use_day_sulfur").value    = state.use.day.sulfur;
+  document.getElementById("use_night_sulfur").value  = state.use.night.sulfur;
+
+  // lines
+  document.getElementById("line1_caustic").value = state.line1.caustic;
+  document.getElementById("line2_caustic").value = state.line2.caustic;
+  document.getElementById("line1_ferric").value  = state.line1.ferric;
+  document.getElementById("line2_ferric").value  = state.line2.ferric;
+  document.getElementById("line1_sulfur").value  = state.line1.sulfur;
+  document.getElementById("line2_sulfur").value  = state.line2.sulfur;
+
+  // incoming
+  document.getElementById("in_caustic").value = state.incoming.caustic;
+  document.getElementById("in_ferric").value  = state.incoming.ferric;
+  document.getElementById("in_sulfur").value  = state.incoming.sulfur;
+
+  // bind change events
+  const ids = [
+    "inpTankMax","inpLeadDays",
+    "start_caustic","start_ferric","start_sulfur",
+    "use_day_caustic","use_night_caustic","use_day_ferric","use_night_ferric","use_day_sulfur","use_night_sulfur",
+    "line1_caustic","line2_caustic","line1_ferric","line2_ferric","line1_sulfur","line2_sulfur",
+    "in_caustic","in_ferric","in_sulfur"
+  ];
+  for(const id of ids){
+    const el=document.getElementById(id);
+    el.onchange = () => {
+      applySettingsFromUI();
+      renderAll();
+    };
+  }
+}
+
+function applySettingsFromUI(){
+  state.tankMax = Number(document.getElementById("inpTankMax").value || 0);
+  state.leadDays = Number(document.getElementById("inpLeadDays").value || 0);
+
+  state.startYear = Number(selYear.value);
+  state.startMonth = Number(selMonth.value);
+
+  state.startInventory.caustic = Number(document.getElementById("start_caustic").value || 0);
+  state.startInventory.ferric  = Number(document.getElementById("start_ferric").value  || 0);
+  state.startInventory.sulfur  = Number(document.getElementById("start_sulfur").value  || 0);
+
+  state.use.day.caustic = Number(document.getElementById("use_day_caustic").value || 0);
+  state.use.night.caustic = Number(document.getElementById("use_night_caustic").value || 0);
+  state.use.day.ferric = Number(document.getElementById("use_day_ferric").value || 0);
+  state.use.night.ferric = Number(document.getElementById("use_night_ferric").value || 0);
+  state.use.day.sulfur = Number(document.getElementById("use_day_sulfur").value || 0);
+  state.use.night.sulfur = Number(document.getElementById("use_night_sulfur").value || 0);
+
+  state.line1.caustic = Number(document.getElementById("line1_caustic").value || 0);
+  state.line2.caustic = Number(document.getElementById("line2_caustic").value || 0);
+  state.line1.ferric = Number(document.getElementById("line1_ferric").value || 0);
+  state.line2.ferric = Number(document.getElementById("line2_ferric").value || 0);
+  state.line1.sulfur = Number(document.getElementById("line1_sulfur").value || 0);
+  state.line2.sulfur = Number(document.getElementById("line2_sulfur").value || 0);
+
+  state.incoming.caustic = Number(document.getElementById("in_caustic").value || 0);
+  state.incoming.ferric  = Number(document.getElementById("in_ferric").value  || 0);
+  state.incoming.sulfur  = Number(document.getElementById("in_sulfur").value  || 0);
+}
+
+function renderKPI(months){
+  // Show current month first day start inventory and last known (today or end of month) as "現在"
+  const m0 = months[0];
+  // pick day = today if same month else first day
+  const now = new Date();
+  const todayKey = keyDate(now.getFullYear(), now.getMonth()+1, now.getDate());
+  let currentInv = m0.rows[0]?.inv || structuredClone(state.startInventory);
+  for(const r of m0.rows){
+    if(r.dk === todayKey){
+      currentInv = r.inv; break;
+    }
+  }
+  kpis.innerHTML="";
+  let worst = 0;
+  let worstChem = null;
+  for(const c of CHEMS){
+    const v = Math.round(currentInv[c.key]*10)/10;
+    const st = (v <= state.line2[c.key]) ? 2 : (v <= state.line1[c.key]) ? 1 : 0;
+    if(st>worst){ worst=st; worstChem=c.label; }
 
     const div=document.createElement("div");
-    div.className="box";
+    div.className="kpi";
     div.innerHTML = `
-      <div class="title">${c.name}</div>
-      <div class="val">${Math.round(l)} L <span class="tag ${tagClass}" style="margin-left:8px">${tagText}</span></div>
-      <div class="small">残量 ${cm} cm / 発注1:${state.chems[c.id].line1cm}cm 発注2:${state.chems[c.id].line2cm}cm</div>
-      <div class="small">推定: 発注1到達 ${proj.d1?fmtMD(proj.d1):"—"} / 発注2到達 ${proj.d2?fmtMD(proj.d2):"—"}</div>
-      <div class="small">推奨: 発注1 ${sug1?fmtMD(sug1):"—"} / 発注2 ${sug2?fmtMD(sug2):"—"}</div>
+      <div class="k">${c.label} 現在</div>
+      <div class="v">${v}</div>
+      <div class="tiny">第1:${state.line1[c.key]} / 第2:${state.line2[c.key]}</div>
+      <div style="margin-top:6px;">
+        <span class="badge ${st===0?'b-ok':st===1?'b-warn':'b-danger'} ${st===2?'blink':''}">
+          ${st===0?'OK':st===1?'第1':'第2'}
+        </span>
+      </div>
     `;
-    box.appendChild(div);
-  });
+    kpis.appendChild(div);
+  }
+
+  if(worst===0){
+    badgeAll.className="badge b-ok";
+    badgeAll.textContent="OK";
+    alertBanner.style.display="none";
+  }else if(worst===1){
+    badgeAll.className="badge b-warn";
+    badgeAll.textContent="第1ライン注意";
+    alertBanner.style.display="flex";
+    alertBanner.className="alertBanner warn";
+    alertTitle.textContent = "第1ラインに近づいています";
+    alertMsg.textContent = `${worstChem} が第1ライン以下です。発注準備をしてください。`;
+  }else{
+    badgeAll.className="badge b-danger blink";
+    badgeAll.textContent="第2ライン危険";
+    alertBanner.style.display="flex";
+    alertBanner.className="alertBanner danger";
+    alertTitle.textContent = "第2ラインに到達（要対応）";
+    alertMsg.textContent = `${worstChem} が第2ライン以下です。至急対応してください。`;
+  }
 }
 
-function fmtMD(d){ return `${d.getMonth()+1}/${d.getDate()}`; }
+function buildMonthBlock(mdata, editable){
+  const wrap=document.createElement("div");
+  wrap.className="card";
+  wrap.style.borderRadius="16px";
 
-function projectReachDates(startDate, chemId, startL){
-  const l1 = state.chems[chemId].line1cm * L_PER_CM;
-  const l2 = state.chems[chemId].line2cm * L_PER_CM;
-  let d1=null, d2=null;
-  let inv=startL;
-  let d=new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-  // simulate up to 180 days
-  for(let i=0;i<180;i++){
-    const ds=ymd(d);
-    ensureWorkEntry(ds);
-    const w=state.work[ds];
-    const use = (w.day?state.chems[chemId].dayUse:0) + (w.night?state.chems[chemId].nightUse:0);
-    const r=(state.receipt[ds]?.[chemId]||0);
-    const m=(state.measure[ds]?.[chemId]);
-    inv = clamp(inv + parseFloat(r||0),0,MAX_L);
-    inv = clamp(inv - use,0,MAX_L);
-    if(m!==undefined && m!==null && m!==""){
-      const mv=parseFloat(m);
-      if(!Number.isNaN(mv)) inv=clamp(mv,0,MAX_L);
+  const ymTitle = `${mdata.y}年 ${mdata.m}月`;
+  const tag = editable ? `<span class="chip">編集</span>` : `<span class="chip">予測</span>`;
+
+  const head=document.createElement("div");
+  head.className="mBlock";
+  head.innerHTML = `
+    <div class="mHeader">
+      <div class="mh">
+        <div class="monthTitle">${ymTitle}</div>
+        ${tag}
+      </div>
+      <div class="hint">${editable ? "☑で稼働 / 受入・補正はこの月だけ入力" : "※この月は在庫推移の予測表示（編集は今月で）"}</div>
+    </div>
+    <div class="tableWrap"></div>
+  `;
+  const tableWrap = head.querySelector(".tableWrap");
+
+  const table=document.createElement("table");
+  const thReceive = editable ? `<th>苛性 受入</th><th>塩二鉄 受入</th><th>希硫酸 受入</th><th>苛性 補正</th><th>塩二鉄 補正</th><th>希硫酸 補正</th>` : ``;
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>日</th><th>曜</th><th>昼</th><th>夜</th>
+        <th>苛性 在庫</th><th>塩二鉄 在庫</th><th>希硫酸 在庫</th>
+        ${thReceive}
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const tbody = table.querySelector("tbody");
+
+  for(const r of mdata.rows){
+    const tr=document.createElement("tr");
+    // Row alert based on any chem status
+    const sMax = Math.max(r.status.caustic, r.status.ferric, r.status.sulfur);
+    if(sMax===1) tr.classList.add("rowAlert1");
+    if(sMax===2) tr.classList.add("rowAlert2");
+
+    const isWeekend = (r.w===0 || r.w===6);
+    const dayLabel = r.d;
+    const wLabel = W[r.w];
+
+    const dayCk = editable ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="dayOn" ${r.dayOn?'checked':''}>` : (r.dayOn ? "☑" : "☐");
+    const nightCk = editable ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="nightOn" ${r.nightOn?'checked':''}>` : (r.nightOn ? "☑" : "☐");
+
+    function stockPill(chemKey, value){
+      const st = r.status[chemKey];
+      const cls = st===2 ? "p-danger" : st===1 ? "p-warn" : "p-ok";
+      return `<span class="pill ${cls}">${Math.round(value*10)/10}</span>`;
     }
-    if(!d1 && inv <= l1) d1=new Date(d);
-    if(!d2 && inv <= l2) d2=new Date(d);
-    if(d1 && d2) break;
-    d.setDate(d.getDate()+1);
+
+    tr.innerHTML = `
+      <td>${dayLabel}</td>
+      <td style="color:${isWeekend?'#ff9ab0':'var(--muted)'};font-weight:800">${wLabel}</td>
+      <td>${dayCk}</td>
+      <td>${nightCk}</td>
+
+      <td class="stockCell">${stockPill("caustic", r.inv.caustic)}</td>
+      <td class="stockCell">${stockPill("ferric",  r.inv.ferric)}</td>
+      <td class="stockCell">${stockPill("sulfur",  r.inv.sulfur)}</td>
+
+      ${editable ? `
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="caustic" value="${getDayRec(r.dk)?.receive?.caustic || ""}" placeholder=""></td>
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="ferric"  value="${getDayRec(r.dk)?.receive?.ferric || ""}" placeholder=""></td>
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="sulfur"  value="${getDayRec(r.dk)?.receive?.sulfur || ""}" placeholder=""></td>
+
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="caustic" value="${getDayRec(r.dk)?.adjust?.caustic || ""}" placeholder=""></td>
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="ferric"  value="${getDayRec(r.dk)?.adjust?.ferric || ""}" placeholder=""></td>
+        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="sulfur"  value="${getDayRec(r.dk)?.adjust?.sulfur || ""}" placeholder=""></td>
+      ` : ``}
+    `;
+    tbody.appendChild(tr);
   }
-  return {d1,d2};
+
+  tableWrap.appendChild(table);
+  wrap.appendChild(head);
+
+  // bind events if editable
+  if(editable){
+    wrap.querySelectorAll("input.ck").forEach(ck=>{
+      ck.addEventListener("change",(e)=>{
+        const dk = ck.dataset.dk;
+        const k = ck.dataset.k;
+        const rec = ensureDayRec(dk);
+        rec[k] = ck.checked;
+        renderAll(false); // re-render but keep scroll? skip for now
+      });
+    });
+    wrap.querySelectorAll("input.inp[data-dk]").forEach(inp=>{
+      inp.addEventListener("change",()=>{
+        const dk = inp.dataset.dk;
+        const recType = inp.dataset.r;
+        const chem = inp.dataset.c;
+        const rec = ensureDayRec(dk);
+        const v = inp.value;
+        if(recType==="receive"){
+          rec.receive[chem] = (v===""? "" : Number(v));
+        }else{
+          rec.adjust[chem] = (v===""? "" : Number(v));
+        }
+        renderAll(false);
+      });
+    });
+  }
+
+  return wrap;
 }
 
 function renderMonths(){
-  const container=document.getElementById("months");
-  container.innerHTML="";
-  const list = monthsInRange();
-  const todayStr=ymd(new Date());
-  list.forEach(({y,m},idx)=>{
-    const monthDiv=document.createElement("div");
-    monthDiv.className="month";
-    monthDiv.innerHTML = `<h3>${y}年 ${m}月</h3>`;
-    const cal=document.createElement("div");
-    cal.className="cal";
-    ["日","月","火","水","木","金","土"].forEach(d=>{
-      const el=document.createElement("div");
-      el.className="dow";
-      el.textContent=d;
-      cal.appendChild(el);
-    });
+  monthsGrid.innerHTML="";
+  // Important: viewY/viewM acts as "今月" anchor
+  // Set startYear/startMonth to viewY/viewM (so month change keeps carryover)
+  state.startYear = viewY;
+  state.startMonth = viewM;
 
-    const first=new Date(y,m-1,1);
-    const last=new Date(y,m,0);
-    const pad=first.getDay();
-    for(let i=0;i<pad;i++){
-      const blank=document.createElement("div");
-      blank.className="day muted";
-      blank.innerHTML="&nbsp;";
-      cal.appendChild(blank);
-    }
-    for(let d=new Date(first); d<=last; d.setDate(d.getDate()+1)){
-      const ds=ymd(d);
-      ensureWorkEntry(ds);
-      const invStart=calcInventoryForDate(d);
-      const dayEl=document.createElement("div");
-      dayEl.className="day";
-      if(ds===todayStr) dayEl.classList.add("today");
-      const w=state.work[ds];
-      // status (worst among chems)
-      const statuses = CHEMS.map(c=>statusForChem(invStart[c.id], c.id));
-      const worst = statuses.includes("danger")?"danger":(statuses.includes("warn")?"warn":"ok");
-      if(worst==="warn") dayEl.style.borderColor="rgba(251,191,36,.65)";
-      if(worst==="danger") dayEl.style.borderColor="rgba(251,113,133,.8)";
+  // compute 3 months from view
+  const months = computeRange(viewY, viewM, 3);
+  renderKPI(months);
 
-      dayEl.innerHTML = `
-        <div class="topline">
-          <div class="dnum">${d.getDate()}</div>
-          <div class="shift">
-            <label>昼 <input class="chk" type="checkbox" data-d="${ds}" data-s="day" ${w.day?"checked":""}></label>
-            <label>夜 <input class="chk" type="checkbox" data-d="${ds}" data-s="night" ${w.night?"checked":""}></label>
-          </div>
-        </div>
-        <div class="mini">
-          ${CHEMS.map(c=>{
-            const l=Math.round(invStart[c.id]);
-            const cm=Math.round(l/L_PER_CM);
-            const st=statusForChem(l,c.id);
-            const cls= st==="ok"?"okText":(st==="warn"?"warnText":"dangerText");
-            return `<div class="line"><span>${c.name}</span><strong class="${cls}">${l}L (${cm}cm)</strong></div>`;
-          }).join("")}
-        </div>
-      `;
-      cal.appendChild(dayEl);
-    }
-
-    monthDiv.appendChild(cal);
-    container.appendChild(monthDiv);
-  });
-
-  container.querySelectorAll("input[type=checkbox]").forEach(chk=>{
-    chk.addEventListener("change", ()=>{
-      const ds=chk.dataset.d;
-      const s=chk.dataset.s;
-      ensureWorkEntry(ds);
-      state.work[ds][s]=chk.checked;
-      save();
-      render();
-    });
+  months.forEach((m,idx)=>{
+    monthsGrid.appendChild(buildMonthBlock(m, idx===0));
   });
 }
 
-function setActiveTab(tabIdx){
-  document.getElementById("tabThis").classList.toggle("active", tabIdx===0);
-  document.getElementById("tabNext").classList.toggle("active", tabIdx===1);
-  document.getElementById("tabNext2").classList.toggle("active", tabIdx===2);
-}
-function jumpTab(tabIdx){
-  const {year,month}=state.view;
-  const t=addMonths(year,month,tabIdx);
-  state.view={year:t.y, month:t.m};
-  save(); render();
-}
-
-function hookControls(){
-  document.getElementById("saveBtn").addEventListener("click", ()=>{ save(); });
-  document.getElementById("prevBtn").addEventListener("click", ()=>{
-    const t=addMonths(state.view.year, state.view.month, -1);
-    state.view={year:t.y, month:t.m};
-    save(); render();
-  });
-  document.getElementById("nextBtn").addEventListener("click", ()=>{
-    const t=addMonths(state.view.year, state.view.month, 1);
-    state.view={year:t.y, month:t.m};
-    save(); render();
-  });
-  document.getElementById("rangeSel").addEventListener("change", (e)=>{
-    state.range=parseInt(e.target.value);
-    save(); render();
-  });
-
-  document.getElementById("wkBtn").addEventListener("click", autoWeekdays);
-  document.getElementById("clearBtn").addEventListener("click", clearAll);
-
-  document.getElementById("tabThis").addEventListener("click", ()=>{ setActiveTab(0); });
-  document.getElementById("tabNext").addEventListener("click", ()=>{ setActiveTab(1); jumpTab(1); });
-  document.getElementById("tabNext2").addEventListener("click", ()=>{ setActiveTab(2); jumpTab(2); });
-
-  // base settings
-  document.getElementById("baseYear").addEventListener("change", (e)=>{
-    state.base.year=parseInt(e.target.value||state.base.year);
-    save(); render();
-  });
-  document.getElementById("baseMonth").addEventListener("change", (e)=>{
-    state.base.month=clamp(parseInt(e.target.value||state.base.month),1,12);
-    save(); render();
-  });
-  document.getElementById("leadDays").addEventListener("change", (e)=>{
-    state.leadDays=clamp(parseInt(e.target.value||0),0,60);
-    save(); render();
-  });
-
-  // export/import
-  document.getElementById("exportBtn").addEventListener("click", ()=>{
-    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=`乳化処理_在庫発注_${state.view.year}${String(state.view.month).padStart(2,'0')}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-  document.getElementById("importBtn").addEventListener("click", ()=>{
-    document.getElementById("importFile").click();
-  });
-  document.getElementById("importFile").addEventListener("change", async (e)=>{
-    const f=e.target.files?.[0];
-    if(!f) return;
-    const txt=await f.text();
-    try{
-      const s=JSON.parse(txt);
-      state=s;
-      save();
-      render();
-      alert("読込しました");
-    }catch(err){
-      alert("JSONが正しくありません");
-    }
-    e.target.value="";
-  });
-}
-
-function render(){
-  // top inputs
-  document.getElementById("baseYear").value = state.base.year;
-  document.getElementById("baseMonth").value = state.base.month;
-  document.getElementById("leadDays").value = state.leadDays ?? 14;
-  document.getElementById("rangeSel").value = String(state.range||3);
-
-  updateViewLabel();
-  buildChemRows();
-  renderKPI();
+function renderAll(updateSelectors=true){
+  if(updateSelectors){
+    selYear.value = viewY;
+    selMonth.value = viewM;
+  }
+  applySettingsFromUI(); // keep settings synced (also sets startYM)
   renderMonths();
 }
 
-window.addEventListener("load", ()=>{
-  hookControls();
-  render();
-  // register service worker
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  }
+function setMonth(y,m){
+  viewY=y; viewM=m;
+  initSelectors();
+  bindSettings();
+  renderAll();
+}
+
+/* =====================
+   Actions
+===================== */
+btnPrev.addEventListener("click",()=>{
+  const prev = addMonths(viewY, viewM, -1);
+  viewY = prev.y; viewM = prev.m;
+  renderAll();
 });
+btnNext.addEventListener("click",()=>{
+  const next = addMonths(viewY, viewM, 1);
+  viewY = next.y; viewM = next.m;
+  renderAll();
+});
+selYear.addEventListener("change",()=>{
+  viewY = Number(selYear.value);
+  renderAll();
+});
+selMonth.addEventListener("change",()=>{
+  viewM = Number(selMonth.value);
+  renderAll();
+});
+
+btnSave.addEventListener("click",()=>{
+  applySettingsFromUI();
+  saveState();
+  const chip=document.getElementById("chipInfo");
+  chip.textContent="保存しました ✅";
+  setTimeout(()=>chip.textContent="チェックで在庫が減ります", 1200);
+});
+
+btnReset.addEventListener("click",()=>{
+  if(!confirm("初期化しますか？（全データが消えます）")) return;
+  localStorage.removeItem(LS_KEY);
+  state = structuredClone(defaults);
+  viewY = state.startYear;
+  viewM = state.startMonth;
+  initSelectors();
+  bindSettings();
+  renderAll();
+});
+
+btnWeekdayOn.addEventListener("click",()=>{
+  // Apply weekday on / weekend off for current view month only
+  const dim = daysInMonth(viewY, viewM);
+  for(let d=1; d<=dim; d++){
+    const w = weekday(viewY, viewM, d);
+    const dk = keyDate(viewY, viewM, d);
+    const rec = ensureDayRec(dk);
+    if(w===0 || w===6){
+      rec.dayOn=false; rec.nightOn=false;
+    }else{
+      rec.dayOn=true; rec.nightOn=true;
+    }
+  }
+  renderAll(false);
+});
+
+/* =====================
+   Boot
+===================== */
+(function boot(){
+  // Register SW
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+  // Initial view = stored start
+  viewY = state.startYear;
+  viewM = state.startMonth;
+  initSelectors();
+  bindSettings();
+  renderAll();
+
+})();
 </script>
 </body>
 </html>
