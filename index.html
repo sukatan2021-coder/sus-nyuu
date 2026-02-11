@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>乳化処理 在庫・発注カレンダー（3ヶ月表示）</title>
+  <title>乳化処理 在庫・発注カレンダー（2ヶ月表示）</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0b1320" />
   <style>
@@ -232,7 +232,7 @@
     }
     @media (min-width: 1350px){
       .monthsGrid{
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
       }
       .tableWrap{max-height: calc(100vh - 265px);}
       table{min-width: 820px;}
@@ -256,7 +256,7 @@
       .topbar .controls, #btnSave, #btnReset, #btnPrev, #btnNext, #btnPrint, #chipView{display:none !important;}
       .layout{grid-template-columns: 1fr; padding:0;}
       .card{box-shadow:none;border:1px solid #ccc;}
-      .monthsGrid{grid-template-columns: 1fr 1fr 1fr;}
+      .monthsGrid{grid-template-columns: 1fr 1fr;}
       .sub{color:#333;}
       .kpi, .hint, .tiny, .msg{color:#111;}
       table{color:#000;}
@@ -271,11 +271,11 @@
         <div class="logo">液</div>
         <div>
           <h1>乳化処理 在庫・発注カレンダー</h1>
-          <div class="sub">3ヶ月同時表示 / アラート強化（保存あり）</div>
+          <div class="sub">2ヶ月同時表示 / アラート強化（保存あり）</div>
         </div>
       </div>
       <div class="controls">
-        <span class="chip" id="chipView">表示：今月/来月/再来月</span>
+        <span class="chip" id="chipView">表示：今月/来月</span>
         <button class="btn big ghost" id="btnPrev">◀ 前の月</button>
         <select class="select" id="selYear"></select>
         <select class="select" id="selMonth"></select>
@@ -410,7 +410,7 @@
     <!-- RIGHT -->
     <section class="card">
       <div class="hd">
-        <div class="title">3ヶ月カレンダー <span class="chip">今月=編集 / 来月・再来月=予測</span></div>
+        <div class="title">2ヶ月カレンダー <span class="chip">今月=編集 / 来月=予測</span></div>
         <div class="controls">
           <span class="chip" id="chipInfo">チェックで在庫が減ります</span>
         </div>
@@ -938,7 +938,7 @@ function renderMonths(){
   state.startMonth = viewM;
 
   // compute 3 months from view
-  const months = computeRange(viewY, viewM, 3);
+  const months = computeRange(viewY, viewM, 2);
   renderKPI(months);
 
   months.forEach((m,idx)=>{

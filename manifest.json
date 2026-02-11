@@ -1,10 +1,10 @@
 {
   "name": "乳化処理 在庫・発注カレンダー",
-  "short_name": "乳化処理",
-  "start_url": "./index.html",
+  "short_name": "在庫カレンダー",
+  "start_url": "./?source=pwa",
   "display": "standalone",
-  "background_color": "#0b1320",
-  "theme_color": "#0b1320",
+  "background_color": "#0f4c81",
+  "theme_color": "#0f4c81",
   "icons": [
     {
       "src": "icon-192.png",
