@@ -445,7 +445,7 @@
    Storage + Defaults
 ===================== */
 const LS_KEY = "nyuu_pwa_v3m_alert";
-const clone = (o) => (typeof structuredClone === "function" ? clone(o) : JSON.parse(JSON.stringify(o)));
+const clone = (o) => (typeof structuredClone === "function" ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
 const CHEMS = [
   { key:"caustic", label:"苛性ソーダ" },
   { key:"ferric",  label:"塩化第二鉄" },
@@ -505,6 +505,12 @@ let state = loadState();
 /* =====================
    Date helpers
 ===================== */
+function fmt(x){
+  if(x===null || x===undefined || x==="") return "";
+  const n = Number(x);
+  if(Number.isNaN(n)) return "";
+  return (Math.round(n*10)/10).toString();
+}
 function pad(n){ return String(n).padStart(2,"0"); }
 function keyDate(y,m,d){ return `${y}-${pad(m)}-${pad(d)}`; }
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
@@ -607,7 +613,7 @@ function computeRange(fromY, fromM, monthsCount){
         else status[c.key] = 0;
       }
 
-      rows.push({ y,m,d, dk, w:weekday(y,m,d), dayOn, nightOn, inv: clone(invCur), status });
+      rows.push({ y,m,d, dk, w:weekday(y,m,d), dayOn, nightOn, inv: clone(invCur), status, receive: clone(rec.receive||{}), adjust: clone(rec.adjust||{}) });
     }
 
     return { y,m, startInv: invStart, endInv: rows[rows.length-1]?.inv || clone(invStart), rows };
@@ -903,16 +909,16 @@ function buildMonthBlock(mdata, mode){
       ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="nightOn" ${r.nightOn?'checked':''}>`
       : (r.nightOn ? "☑" : "☐");
 
-    const invCell = (v,st)=> `<span class="pill st${st}">${fmt(v)}</span>`;
+    const invCell = (v,st)=> `<span class="pill ${st===0?'p-ok':st===1?'p-warn':'p-danger'}">${fmt(v)}</span>`;
 
     // Inputs only for full month
     const recInputs = allowInputs ? `
-      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="caustic" value="${r.receive.caustic}"></td>
-      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="ferric" value="${r.receive.ferric}"></td>
-      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="sulfur" value="${r.receive.sulfur}"></td>
-      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="caustic" value="${r.adjust.caustic}"></td>
-      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="ferric" value="${r.adjust.ferric}"></td>
-      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="sulfur" value="${r.adjust.sulfur}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="caustic" value="${r.receive.caustic ?? ""}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="ferric" value="${r.receive.ferric ?? ""}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="sulfur" value="${r.receive.sulfur ?? ""}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="caustic" value="${r.adjust.caustic ?? ""}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="ferric" value="${r.adjust.ferric ?? ""}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="sulfur" value="${r.adjust.sulfur ?? ""}"></td>
     ` : "";
 
     tr.innerHTML = `
