@@ -445,6 +445,7 @@
    Storage + Defaults
 ===================== */
 const LS_KEY = "nyuu_pwa_v3m_alert";
+const clone = (o) => (typeof structuredClone === "function" ? clone(o) : JSON.parse(JSON.stringify(o)));
 const CHEMS = [
   { key:"caustic", label:"苛性ソーダ" },
   { key:"ferric",  label:"塩化第二鉄" },
@@ -476,13 +477,13 @@ const defaults = {
 function loadState(){
   try{
     const raw = localStorage.getItem(LS_KEY);
-    if(!raw) return structuredClone(defaults);
+    if(!raw) return clone(defaults);
     const obj = JSON.parse(raw);
     // merge shallow
-    return deepMerge(structuredClone(defaults), obj);
+    return deepMerge(clone(defaults), obj);
   }catch(e){
     console.warn(e);
-    return structuredClone(defaults);
+    return clone(defaults);
   }
 }
 function saveState(){
@@ -540,7 +541,7 @@ function computeRange(fromY, fromM, monthsCount){
   const startM = state.startMonth;
 
   // We need beginning inventory at start date
-  let inv = structuredClone(state.startInventory);
+  let inv = clone(state.startInventory);
 
   // Iterate months from startYM to target end
   const end = addMonths(fromY, fromM, monthsCount-1);
@@ -560,7 +561,7 @@ function computeRange(fromY, fromM, monthsCount){
   function processMonth(y,m, invStart){
     const dim = daysInMonth(y,m);
     const rows = [];
-    let invCur = structuredClone(invStart);
+    let invCur = clone(invStart);
 
     for(let d=1; d<=dim; d++){
       const dk = keyDate(y,m,d);
@@ -606,17 +607,17 @@ function computeRange(fromY, fromM, monthsCount){
         else status[c.key] = 0;
       }
 
-      rows.push({ y,m,d, dk, w:weekday(y,m,d), dayOn, nightOn, inv: structuredClone(invCur), status });
+      rows.push({ y,m,d, dk, w:weekday(y,m,d), dayOn, nightOn, inv: clone(invCur), status });
     }
 
-    return { y,m, startInv: invStart, endInv: rows[rows.length-1]?.inv || structuredClone(invStart), rows };
+    return { y,m, startInv: invStart, endInv: rows[rows.length-1]?.inv || clone(invStart), rows };
   }
 
   // Move curYM forward until reaching endYM
   while(compareYM(curY,curM,end.y,end.m) <= 0){
     const mk = monthKey(curY,curM);
     const mdata = processMonth(curY,curM, inv);
-    inv = structuredClone(mdata.endInv);
+    inv = clone(mdata.endInv);
 
     if(want.includes(mk)){
       months.push(mdata);
@@ -761,14 +762,14 @@ function setStartInventoryInputs(invObj){
 function getCurrentMonthEndInv(y,m){
   applySettingsFromUI(); // sync latest
   const ms = computeRange(y,m,1);
-  return ms[0]?.endInv ? structuredClone(ms[0].endInv) : structuredClone(state.startInventory);
+  return ms[0]?.endInv ? clone(ms[0].endInv) : clone(state.startInventory);
 }
 
 function autoCarryoverIfNeeded(fromY,fromM,toY,toM){
   const delta = (toY-fromY)*12 + (toM-fromM);
   if(delta===1){
     const endInv = getCurrentMonthEndInv(fromY,fromM);
-    state.monthStartMap[ymKey(toY,toM)] = structuredClone(endInv);
+    state.monthStartMap[ymKey(toY,toM)] = clone(endInv);
     setStartInventoryInputs(endInv);
   }else{
     const stored = state.monthStartMap[ymKey(toY,toM)];
@@ -786,7 +787,7 @@ function renderKPI(months){
   // pick day = today if same month else first day
   const now = new Date();
   const todayKey = keyDate(now.getFullYear(), now.getMonth()+1, now.getDate());
-  let currentInv = m0.rows[0]?.inv || structuredClone(state.startInventory);
+  let currentInv = m0.rows[0]?.inv || clone(state.startInventory);
   for(const r of m0.rows){
     if(r.dk === todayKey){
       currentInv = r.inv; break;
@@ -1041,7 +1042,7 @@ btnPrint.addEventListener("click",()=>{ window.print(); });
 btnReset.addEventListener("click",()=>{
   if(!confirm("初期化しますか？（全データが消えます）")) return;
   localStorage.removeItem(LS_KEY);
-  state = structuredClone(defaults);
+  state = clone(defaults);
   viewY = state.startYear;
   viewM = state.startMonth;
   initSelectors();
