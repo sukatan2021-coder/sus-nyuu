@@ -152,11 +152,11 @@
       border-collapse:separate;
       border-spacing:0;
       width:100%;
-      min-width: 920px;
-      font-size:13px;
+      min-width:0;
+      font-size:12px;
     }
     th, td{
-      padding:8px 8px;
+      padding:6px 6px;
       border-bottom:1px solid rgba(255,255,255,.06);
       white-space:nowrap;
       vertical-align:middle;
@@ -225,19 +225,16 @@
       height:10px;
     }
     .monthsGrid{
-      display:grid;
-      grid-template-columns: 1fr;
+      display:flex;
+      flex-direction:column;
       gap:14px;
       padding:12px;
+      overflow-y:auto;
+      scroll-snap-type:y mandatory;
+      max-height: calc(100vh - 170px);
     }
-    @media (min-width: 1350px){
-      .monthsGrid{
-        grid-template-columns: 1fr 1fr;
-      }
-      .tableWrap{max-height: calc(100vh - 265px);}
-      table{min-width: 820px;}
-    }
-    .alertBanner{
+    .monthsGrid > .card{ scroll-snap-align:start; width:100%; } 
+.alertBanner{
       padding:10px 12px;
       margin-top:10px;
       border-radius:14px;
@@ -280,6 +277,12 @@
       background: rgba(8,18,36,.55);
     }
     .swLabel{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+    .swRow{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .swTitle{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px;}
+    .swLR{display:flex; align-items:center; gap:10px;}
+    .lr{font-size:12px; color:var(--muted); opacity:.9;}
+    .lr.right{color:var(--text); opacity:.95;}
+
     .switch{position:relative; display:inline-block; width:54px; height:30px; flex:0 0 auto;}
     .switch input{opacity:0; width:0; height:0;}
     .slider{
@@ -443,29 +446,63 @@
 
             <div class="sep"></div>
 
-            <div class="kpi">
-              <div class="k">一括切替（スイッチ）</div>
-              <div class="tiny" style="margin-bottom:8px;">平日：<b>昼ON / 夜OFF</b>、土日：<b>昼夜OFF</b></div>
-              <div class="swGrid">
-                <div class="swItem">
-                  <div class="swLabel"><span class="chip" id="chipThis">今月</span></div>
-                  <label class="switch" title="今月に適用">
-                    <input type="checkbox" id="swThisDayOnly" />
-                    <span class="slider"></span>
-                  </label>
-                </div>
-                <div class="swItem">
-                  <div class="swLabel"><span class="chip" id="chipNext">来月</span></div>
-                  <label class="switch" title="来月に適用">
-                    <input type="checkbox" id="swNextDayOnly" />
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
-              <div class="tiny" style="margin-top:8px; opacity:.85;">※スイッチをONにすると適用し、すぐOFFに戻ります。</div>
-            </div>
-          </div>
-        </div>
+            
+<div class="kpi">
+  <div class="k">一括切替（スイッチ）</div>
+  <div class="tiny" style="margin-bottom:10px;">左：<b>なし</b> ／ 右：チェックを一括投入（<b>土日OFF</b>）</div>
+
+  <div class="swGrid">
+    <div class="swRow">
+      <div class="swTitle"><span class="chip" id="chipThis">今月</span> 昼のみ</div>
+      <div class="swLR">
+        <span class="lr left">なし</span>
+        <label class="switch" title="今月：平日昼だけON（夜OFF/土日OFF）">
+          <input type="checkbox" id="swThis_WD_Day" />
+          <span class="slider"></span>
+        </label>
+        <span class="lr right">平日昼</span>
+      </div>
+    </div>
+
+    <div class="swRow">
+      <div class="swTitle"><span class="chip">今月</span> 昼夜</div>
+      <div class="swLR">
+        <span class="lr left">なし</span>
+        <label class="switch" title="今月：平日昼夜ON（土日OFF）">
+          <input type="checkbox" id="swThis_WD_DayNight" />
+          <span class="slider"></span>
+        </label>
+        <span class="lr right">平日昼夜</span>
+      </div>
+    </div>
+
+    <div class="swRow">
+      <div class="swTitle"><span class="chip" id="chipNext">来月</span> 昼のみ</div>
+      <div class="swLR">
+        <span class="lr left">なし</span>
+        <label class="switch" title="来月：平日昼だけON（夜OFF/土日OFF）">
+          <input type="checkbox" id="swNext_WD_Day" />
+          <span class="slider"></span>
+        </label>
+        <span class="lr right">平日昼</span>
+      </div>
+    </div>
+
+    <div class="swRow">
+      <div class="swTitle"><span class="chip">来月</span> 昼夜</div>
+      <div class="swLR">
+        <span class="lr left">なし</span>
+        <label class="switch" title="来月：平日昼夜ON（土日OFF）">
+          <input type="checkbox" id="swNext_WD_DayNight" />
+          <span class="slider"></span>
+        </label>
+        <span class="lr right">平日昼夜</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tiny" style="margin-top:10px; opacity:.85;">※右にONで適用し、すぐ左（OFF）に戻ります。</div>
+</div>
       </div>
     </section>
 
@@ -699,8 +736,10 @@ const btnSave = document.getElementById("btnSave");
 const btnReset = document.getElementById("btnReset");
 const btnPrint = document.getElementById("btnPrint");
 const btnWeekdayOn = document.getElementById("btnWeekdayOn");
-const swThisDayOnly = document.getElementById("swThisDayOnly");
-const swNextDayOnly = document.getElementById("swNextDayOnly");
+const swThis_WD_Day = document.getElementById("swThis_WD_Day");
+const swThis_WD_DayNight = document.getElementById("swThis_WD_DayNight");
+const swNext_WD_Day = document.getElementById("swNext_WD_Day");
+const swNext_WD_DayNight = document.getElementById("swNext_WD_DayNight");
 const chipThis = document.getElementById("chipThis");
 const chipNext = document.getElementById("chipNext");
 const monthsGrid = document.getElementById("monthsGrid");
@@ -1149,6 +1188,25 @@ function applyPresetDayOnNightOff(y,m){
   }
 }
 
+
+function applyPresetDayNightOnWeekendOff(y,m){
+  const dim = daysInMonth(y, m);
+  for(let d=1; d<=dim; d++){
+    const w = weekday(y, m, d);
+    const dk = keyDate(y, m, d);
+    const rec = ensureDayRec(dk);
+    if(w===0 || w===6){
+      rec.dayOn = false;
+      rec.nightOn = false;
+    }else{
+      rec.dayOn = true;
+      rec.nightOn = true;
+    }
+    setDayRec(dk, rec);
+  }
+}
+
+
 function oneShotSwitch(swEl, fnApply, doneMsg){
   if(!swEl) return;
   swEl.addEventListener("change",()=>{
@@ -1165,9 +1223,20 @@ function oneShotSwitch(swEl, fnApply, doneMsg){
   });
 }
 
-oneShotSwitch(swThisDayOnly, ()=>applyPresetDayOnNightOff(viewY, viewM), "今月：平日(昼ON/夜OFF) を適用しました ✅");
-oneShotSwitch(swNextDayOnly, ()=>{
+
+oneShotSwitch(swThis_WD_Day, ()=>applyPresetDayOnNightOff(viewY, viewM), "今月：平日(昼ON/夜OFF) を適用しました ✅");
+oneShotSwitch(swThis_WD_DayNight, ()=>applyPresetDayNightOnWeekendOff(viewY, viewM), "今月：平日(昼夜ON) を適用しました ✅");
+
+oneShotSwitch(swNext_WD_Day, ()=>{
   const n = addMonths(viewY, viewM, 1);
+  applyPresetDayOnNightOff(n.y, n.m);
+}, "来月：平日(昼ON/夜OFF) を適用しました ✅");
+
+oneShotSwitch(swNext_WD_DayNight, ()=>{
+  const n = addMonths(viewY, viewM, 1);
+  applyPresetDayNightOnWeekendOff(n.y, n.m);
+}, "来月：平日(昼夜ON) を適用しました ✅");
+
   applyPresetDayOnNightOff(n.y, n.m);
 }, "来月：平日(昼ON/夜OFF) を適用しました ✅");
 
