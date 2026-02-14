@@ -229,9 +229,10 @@
       flex-direction:column;
       gap:14px;
       padding:12px;
-      overflow-y:auto;
-      scroll-snap-type:y mandatory;
-      max-height: calc(100vh - 170px);
+      /* Show full months and let the whole page scroll (no inner scroll clipping). */
+      overflow: visible;
+      scroll-snap-type: none;
+      max-height: none;
     }
     .monthsGrid > .card{ scroll-snap-align:start; width:100%; } 
 
