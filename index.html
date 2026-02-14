@@ -271,6 +271,35 @@
       margin-left:8px;
     }
     .bulkBar .btn{ padding:8px 10px; }
+
+    /* Switch (one-shot apply) */
+    .swGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .swItem{display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(8,18,36,.55);
+    }
+    .swLabel{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+    .switch{position:relative; display:inline-block; width:54px; height:30px; flex:0 0 auto;}
+    .switch input{opacity:0; width:0; height:0;}
+    .slider{
+      position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+      background: rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);
+      transition:.2s; border-radius:999px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+    .slider:before{
+      position:absolute; content:""; height:22px; width:22px; left:4px; top:3px;
+      background: rgba(255,255,255,.80);
+      transition:.2s; border-radius:999px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    }
+    .switch input:checked + .slider{
+      background: rgba(90,210,255,.22);
+      border-color: rgba(90,210,255,.35);
+    }
+    .switch input:checked + .slider:before{ transform: translateX(24px); }
     </style>
 </head>
 <body>
@@ -411,6 +440,30 @@
             <div class="sep"></div>
 
             <button class="btn big ghost" id="btnWeekdayOn">平日ON / 土日OFF（今月）</button>
+
+            <div class="sep"></div>
+
+            <div class="kpi">
+              <div class="k">一括切替（スイッチ）</div>
+              <div class="tiny" style="margin-bottom:8px;">平日：<b>昼ON / 夜OFF</b>、土日：<b>昼夜OFF</b></div>
+              <div class="swGrid">
+                <div class="swItem">
+                  <div class="swLabel"><span class="chip" id="chipThis">今月</span></div>
+                  <label class="switch" title="今月に適用">
+                    <input type="checkbox" id="swThisDayOnly" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="swItem">
+                  <div class="swLabel"><span class="chip" id="chipNext">来月</span></div>
+                  <label class="switch" title="来月に適用">
+                    <input type="checkbox" id="swNextDayOnly" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="tiny" style="margin-top:8px; opacity:.85;">※スイッチをONにすると適用し、すぐOFFに戻ります。</div>
+            </div>
           </div>
         </div>
       </div>
@@ -646,6 +699,10 @@ const btnSave = document.getElementById("btnSave");
 const btnReset = document.getElementById("btnReset");
 const btnPrint = document.getElementById("btnPrint");
 const btnWeekdayOn = document.getElementById("btnWeekdayOn");
+const swThisDayOnly = document.getElementById("swThisDayOnly");
+const swNextDayOnly = document.getElementById("swNextDayOnly");
+const chipThis = document.getElementById("chipThis");
+const chipNext = document.getElementById("chipNext");
 const monthsGrid = document.getElementById("monthsGrid");
 const kpis = document.getElementById("kpis");
 const badgeAll = document.getElementById("badgeAll");
@@ -992,6 +1049,10 @@ function renderAll(updateSelectors=true){
     selYear.value = viewY;
     selMonth.value = viewM;
   }
+  // Update left-panel switch month labels
+  const next = addMonths(viewY, viewM, 1);
+  if(chipThis) chipThis.textContent = `${viewY}年${viewM}月`;
+  if(chipNext) chipNext.textContent = `${next.y}年${next.m}月`;
   applySettingsFromUI(); // keep settings synced (also sets startYM)
   renderMonths();
 }
@@ -1071,6 +1132,44 @@ btnWeekdayOn.addEventListener("click",()=>{
   }
   renderAll(false);
 });
+
+function applyPresetDayOnNightOff(y,m){
+  const dim = daysInMonth(y, m);
+  for(let d=1; d<=dim; d++){
+    const w = weekday(y, m, d);
+    const dk = keyDate(y, m, d);
+    const rec = ensureDayRec(dk);
+    if(w===0 || w===6){
+      rec.dayOn = false;
+      rec.nightOn = false;
+    }else{
+      rec.dayOn = true;
+      rec.nightOn = false;
+    }
+  }
+}
+
+function oneShotSwitch(swEl, fnApply, doneMsg){
+  if(!swEl) return;
+  swEl.addEventListener("change",()=>{
+    if(!swEl.checked) return;
+    fnApply();
+    renderAll(false);
+    const chip=document.getElementById("chipInfo");
+    if(chip){
+      chip.textContent = doneMsg;
+      setTimeout(()=>chip.textContent="チェックで在庫が減ります", 1400);
+    }
+    // one-shot
+    setTimeout(()=>{ swEl.checked=false; }, 180);
+  });
+}
+
+oneShotSwitch(swThisDayOnly, ()=>applyPresetDayOnNightOff(viewY, viewM), "今月：平日(昼ON/夜OFF) を適用しました ✅");
+oneShotSwitch(swNextDayOnly, ()=>{
+  const n = addMonths(viewY, viewM, 1);
+  applyPresetDayOnNightOff(n.y, n.m);
+}, "来月：平日(昼ON/夜OFF) を適用しました ✅");
 
 /* =====================
    Boot
