@@ -147,7 +147,7 @@
     @keyframes blink{
       50%{filter:brightness(1.35)}
     }
-    .tableWrap{overflow:auto; max-height: calc(100vh - 210px);}
+    .tableWrap{overflow-x:auto; overflow-y:visible; max-height:none;}
     table{
       border-collapse:separate;
       border-spacing:0;
@@ -307,17 +307,17 @@
     .bulkBar .btn{ padding:8px 10px; }
 
     /* Switch (one-shot apply) */
-    .swGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .swGrid{display:grid; grid-template-columns: 1fr; gap:10px;}
     .swItem{display:flex; align-items:center; justify-content:space-between; gap:10px;
       padding:10px 12px; border-radius:16px;
       border:1px solid rgba(255,255,255,.10);
       background: rgba(8,18,36,.55);
     }
     .swLabel{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
-    .swRow{display:flex; align-items:center; justify-content:space-between; gap:12px;}
-    .swTitle{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px;}
-    .swLR{display:flex; align-items:center; gap:10px;}
-    .lr{font-size:12px; color:var(--muted); opacity:.9;}
+    .swRow{display:flex; flex-direction:column; align-items:flex-start; gap:6px;}
+    .swTitle{font-size:11px; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+    .swLR{display:flex; align-items:center; gap:8px; width:100%; justify-content:flex-end;}
+    .lr{font-size:11px; color:var(--muted); opacity:.9; white-space:nowrap;}
     .lr.right{color:var(--text); opacity:.95;}
 
     .switch{position:relative; display:inline-block; width:54px; height:30px; flex:0 0 auto;}
