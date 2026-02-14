@@ -1,5 +1,5 @@
 {
-  "name": "乳化処理 在庫・発注カレンダー",
+  "name": "乳化処理 在庫・発注カレンダー（2か月・予測入力）",
   "short_name": "在庫カレンダー",
   "start_url": "./?source=pwa",
   "display": "standalone",

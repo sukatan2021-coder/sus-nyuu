@@ -262,7 +262,16 @@
       table{color:#000;}
     }
 
-</style>
+
+    .bulkBar{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-left:8px;
+    }
+    .bulkBar .btn{ padding:8px 10px; }
+    </style>
 </head>
 <body>
   <header>
@@ -413,6 +422,18 @@
         <div class="title">2ヶ月カレンダー <span class="chip">今月=編集 / 来月=予測</span></div>
         <div class="controls">
           <span class="chip" id="chipInfo">チェックで在庫が減ります</span>
+        <div class="bulkBar">
+          <select id="bulkTarget" class="select" title="一括チェックの対象">
+            <option value="both">今月+来月</option>
+            <option value="this">今月のみ</option>
+            <option value="next">来月のみ</option>
+          </select>
+          <button class="btn ghost" id="btnBulkAll">平日 昼夜</button>
+          <button class="btn ghost" id="btnBulkDay">平日 昼</button>
+          <button class="btn ghost" id="btnBulkNight">平日 夜</button>
+          <button class="btn ghost" id="btnBulkClear">平日 解除</button>
+        </div>
+
         </div>
       </div>
       <div class="monthsGrid" id="monthsGrid"></div>
@@ -815,30 +836,42 @@ function renderKPI(months){
   }
 }
 
-function buildMonthBlock(mdata, editable){
+
+function buildMonthBlock(mdata, mode){
+  const allowChecks = (mode !== "view");      // チェックは編集できるか
+  const allowInputs = (mode === "full");     // 受入/補正の入力もできるか
+
   const wrap=document.createElement("div");
   wrap.className="card";
   wrap.style.borderRadius="16px";
 
   const ymTitle = `${mdata.y}年 ${mdata.m}月`;
-  const tag = editable ? `<span class="chip">編集</span>` : `<span class="chip">予測</span>`;
+  const tag = allowInputs
+    ? `<span class="chip">編集</span>`
+    : (allowChecks ? `<span class="chip">予測(チェック可)</span>` : `<span class="chip">予測</span>`);
 
   const head=document.createElement("div");
   head.className="mBlock";
   head.innerHTML = `
     <div class="mHeader">
-      <div class="mh">
-        <div class="monthTitle">${ymTitle}</div>
-        ${tag}
+      <div class="mTitle">${ymTitle} ${tag}</div>
+      <div class="mHint">
+        ${allowInputs
+          ? "チェックで使用量を減算。受入/補正はこの月だけ入力できます。"
+          : (allowChecks ? "チェックは入力できます（予測用）。受入/補正は今月だけ。" : "閲覧のみ")}
       </div>
-      <div class="hint">${editable ? "☑で稼働 / 受入・補正はこの月だけ入力" : "※この月は在庫推移の予測表示（編集は今月で）"}</div>
     </div>
-    <div class="tableWrap"></div>
   `;
-  const tableWrap = head.querySelector(".tableWrap");
+  wrap.appendChild(head);
 
   const table=document.createElement("table");
-  const thReceive = editable ? `<th>苛性 受入</th><th>塩二鉄 受入</th><th>希硫酸 受入</th><th>苛性 補正</th><th>塩二鉄 補正</th><th>希硫酸 補正</th>` : ``;
+  table.className="tbl";
+
+  // Receive/Adjust columns: 今月(フル)だけ表示
+  const thReceive = allowInputs ? `
+        <th>苛性 受入</th><th>塩二鉄 受入</th><th>希硫酸 受入</th>
+        <th>苛性 補正</th><th>塩二鉄 補正</th><th>希硫酸 補正</th>
+  ` : "";
 
   table.innerHTML = `
     <thead>
@@ -860,56 +893,57 @@ function buildMonthBlock(mdata, editable){
     if(sMax===1) tr.classList.add("rowAlert1");
     if(sMax===2) tr.classList.add("rowAlert2");
 
-    const isWeekend = (r.w===0 || r.w===6);
-    const dayLabel = r.d;
     const wLabel = W[r.w];
 
-    const dayCk = editable ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="dayOn" ${r.dayOn?'checked':''}>` : (r.dayOn ? "☑" : "☐");
-    const nightCk = editable ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="nightOn" ${r.nightOn?'checked':''}>` : (r.nightOn ? "☑" : "☐");
+    const dayCk = allowChecks
+      ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="dayOn" ${r.dayOn?'checked':''}>`
+      : (r.dayOn ? "☑" : "☐");
+    const nightCk = allowChecks
+      ? `<input type="checkbox" class="ck" data-dk="${r.dk}" data-k="nightOn" ${r.nightOn?'checked':''}>`
+      : (r.nightOn ? "☑" : "☐");
 
-    function stockPill(chemKey, value){
-      const st = r.status[chemKey];
-      const cls = st===2 ? "p-danger" : st===1 ? "p-warn" : "p-ok";
-      return `<span class="pill ${cls}">${Math.round(value*10)/10}</span>`;
-    }
+    const invCell = (v,st)=> `<span class="pill st${st}">${fmt(v)}</span>`;
+
+    // Inputs only for full month
+    const recInputs = allowInputs ? `
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="caustic" value="${r.receive.caustic}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="ferric" value="${r.receive.ferric}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="receive" data-c="sulfur" value="${r.receive.sulfur}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="caustic" value="${r.adjust.caustic}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="ferric" value="${r.adjust.ferric}"></td>
+      <td><input class="inp" data-dk="${r.dk}" data-r="adjust"  data-c="sulfur" value="${r.adjust.sulfur}"></td>
+    ` : "";
 
     tr.innerHTML = `
-      <td>${dayLabel}</td>
-      <td style="color:${isWeekend?'#ff9ab0':'var(--muted)'};font-weight:800">${wLabel}</td>
-      <td>${dayCk}</td>
-      <td>${nightCk}</td>
-
-      <td class="stockCell">${stockPill("caustic", r.inv.caustic)}</td>
-      <td class="stockCell">${stockPill("ferric",  r.inv.ferric)}</td>
-      <td class="stockCell">${stockPill("sulfur",  r.inv.sulfur)}</td>
-
-      ${editable ? `
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="caustic" value="${getDayRec(r.dk)?.receive?.caustic || ""}" placeholder=""></td>
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="ferric"  value="${getDayRec(r.dk)?.receive?.ferric || ""}" placeholder=""></td>
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="receive" data-c="sulfur"  value="${getDayRec(r.dk)?.receive?.sulfur || ""}" placeholder=""></td>
-
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="caustic" value="${getDayRec(r.dk)?.adjust?.caustic || ""}" placeholder=""></td>
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="ferric"  value="${getDayRec(r.dk)?.adjust?.ferric || ""}" placeholder=""></td>
-        <td><input class="inp" style="min-width:88px" type="number" step="1" data-dk="${r.dk}" data-r="adjust" data-c="sulfur"  value="${getDayRec(r.dk)?.adjust?.sulfur || ""}" placeholder=""></td>
-      ` : ``}
+      <td>${r.d}</td>
+      <td class="${(r.w===0||r.w===6)?'wknd':''}">${wLabel}</td>
+      <td class="ckCell">${dayCk}</td>
+      <td class="ckCell">${nightCk}</td>
+      <td>${invCell(r.inv.caustic, r.status.caustic)}</td>
+      <td>${invCell(r.inv.ferric,  r.status.ferric)}</td>
+      <td>${invCell(r.inv.sulfur,  r.status.sulfur)}</td>
+      ${recInputs}
     `;
     tbody.appendChild(tr);
   }
 
-  tableWrap.appendChild(table);
-  wrap.appendChild(head);
+  wrap.appendChild(table);
 
-  // bind events if editable
-  if(editable){
+  // Bind events (checkboxes)
+  if(allowChecks){
     wrap.querySelectorAll("input.ck").forEach(ck=>{
-      ck.addEventListener("change",(e)=>{
+      ck.addEventListener("change",()=>{
         const dk = ck.dataset.dk;
         const k = ck.dataset.k;
         const rec = ensureDayRec(dk);
         rec[k] = ck.checked;
-        renderAll(false); // re-render but keep scroll? skip for now
+        renderAll(false); // re-render
       });
     });
+  }
+
+  // Bind inputs for receive/adjust (full month only)
+  if(allowInputs){
     wrap.querySelectorAll("input.inp[data-dk]").forEach(inp=>{
       inp.addEventListener("change",()=>{
         const dk = inp.dataset.dk;
@@ -937,12 +971,12 @@ function renderMonths(){
   state.startYear = viewY;
   state.startMonth = viewM;
 
-  // compute 3 months from view
+  // compute 2 months from view
   const months = computeRange(viewY, viewM, 2);
   renderKPI(months);
 
   months.forEach((m,idx)=>{
-    monthsGrid.appendChild(buildMonthBlock(m, idx===0));
+    monthsGrid.appendChild(buildMonthBlock(m, idx===0 ? "full" : "checks"));
   });
 }
 
